@@ -1,0 +1,35 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next
+.next/
+out/
+build/
+dist/
+
+# opennext / cloudflare
+.open-next/
+.wrangler/
+worker-configuration.d.ts
+
+# secrets — never commit
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+
+# misc
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+.vscode/
+.idea/
+
+# local db exports
+*.sql
+!drizzle/**/*.sql
+backup*.sql

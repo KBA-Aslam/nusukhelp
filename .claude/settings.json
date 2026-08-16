@@ -1,0 +1,51 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit",
+      "Write",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git tag:*)",
+      "Bash(mkdir:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(wrangler d1 create:*)",
+      "Bash(wrangler d1 execute:*)",
+      "Bash(wrangler d1 migrations apply:*)",
+      "Bash(wrangler d1 migrations list:*)",
+      "Bash(wrangler d1 list)",
+      "Bash(wrangler d1 info:*)",
+      "Bash(wrangler d1 export:*)",
+      "Bash(wrangler r2 bucket create:*)",
+      "Bash(wrangler r2 bucket list)",
+      "Bash(wrangler deploy:*)",
+      "Bash(wrangler versions:*)",
+      "Bash(wrangler tail:*)",
+      "Bash(wrangler whoami)",
+      "Bash(wrangler types:*)",
+      "Bash(wrangler dev:*)"
+    ],
+    "deny": [
+      "Bash(wrangler d1 delete:*)",
+      "Bash(wrangler r2 bucket delete:*)",
+      "Bash(wrangler delete:*)",
+      "Bash(wrangler secret delete:*)",
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)",
+      "Bash(npm publish:*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./.dev.vars)"
+    ]
+  }
+}
