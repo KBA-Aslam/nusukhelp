@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 
+import { Bidi } from '@/components/ui/bidi';
 import { Link, usePathname } from '@/i18n/navigation';
 import { localeNames, routing, type Locale } from '@/i18n/routing';
 
@@ -34,9 +35,17 @@ export function LocaleSwitcher() {
         return (
           <span key={locale} className="flex items-center">
             {index > 0 ? (
-              <span aria-hidden="true" className="px-1 text-hairline">
-                /
-              </span>
+              /* A hairline rule, not a "/" character. A literal slash between
+                 an LTR and an RTL run is a bidi neutral with a strong run on
+                 either side, so its resolved position depends on the paragraph
+                 direction — it is the one separator on the site that would sit
+                 differently on `/en` and `/ar`. A zero-text element has no
+                 direction to resolve, and a thin rule is what §7 asks for
+                 anyway. */
+              <span
+                aria-hidden="true"
+                className="mx-2 h-3 w-px shrink-0 bg-hairline"
+              />
             ) : null}
             <Link
               href={pathname}
@@ -54,7 +63,11 @@ export function LocaleSwitcher() {
                   : 'text-slate hover:text-verdant',
               ].join(' ')}
             >
-              {localeNames[locale]}
+              {/* The two names are opposite-direction runs either side of a
+                  neutral separator — the one place on the site where both
+                  scripts sit on a single line. Without isolation the "/" and
+                  the Latin "English" reorder around the Arabic on `/ar`. */}
+              <Bidi>{localeNames[locale]}</Bidi>
             </Link>
           </span>
         );

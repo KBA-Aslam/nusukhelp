@@ -255,9 +255,43 @@ Footer: Services / B2B / Company columns, division line, affiliation disclaimer.
 - Arabic layout sets `dir="rtl"` on `<html>`
 - **All spacing uses logical properties** — `ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`. Never `ml-*`, `mr-*`, `left-*`, `right-*` in shared components.
 - Directional icons mirror with `rtl:-scale-x-100`
+- **All user-visible copy is wrapped in `<Bidi>`** — see below
 - Western Arabic numerals (`1234`) in both locales
 - `hreflang` alternates on every page
 - **Admin is English-only.** No locale prefix, `dir="ltr"` always.
+
+### Bidirectional isolation — `<Bidi>`
+
+Added in Phase 3, after the full stop of an English paragraph rendered at the
+*start* of its last line on `/ar`:
+
+```
+.complete ground handling across Saudi Arabia
+```
+
+A block inside `<html dir="rtl">` establishes a bidi paragraph with an RTL base
+direction. Latin text inside it forms strong LTR runs, but sentence-final
+punctuation is a **neutral**, and the Unicode Bidirectional Algorithm resolves
+neutrals at a paragraph's end to the *paragraph's* level rather than to the run
+beside them. The period takes RTL and lands at the far left.
+
+**Every piece of user-visible copy inside `/[locale]` goes through
+`<Bidi>`** (`src/components/ui/bidi.tsx` — a `<bdi dir="auto">` wrapper). It is
+inert on `/en` and on Arabic text, and load-bearing for Latin text on `/ar`.
+
+Two things that do **not** work, recorded so they are not retried:
+
+| Attempt | Why it fails |
+|---|---|
+| `unicode-bidi: isolate` on the block | A block already establishes its own bidi paragraph — there is no outer context to isolate from. The wrapper must be **inline**, around the run. |
+| `direction: ltr` or `unicode-bidi: plaintext` on the paragraph | Fixes the punctuation but flips the base direction, so `text-align: start` resolves left. English copy then left-aligns inside a right-aligned page, hiding the alignment bugs `/ar` exists to expose. |
+
+**This is not scaffolding for the placeholder period.** It does not come out
+when open item 5 lands. Real Arabic copy still embeds permanent Latin islands
+that need isolating: "Nusuk Help", "Al Haramain Reservation", "B2B", email
+addresses, phone numbers such as `+966 57 679 9128` — where the leading `+` is
+itself a neutral and migrates to the wrong end — and, on the admin side from
+Phase 10, booking numbers like `AHR-2026-00041`.
 
 Fonts: Inter (Latin), IBM Plex Sans Arabic (Arabic, loaded only on `/ar`).
 

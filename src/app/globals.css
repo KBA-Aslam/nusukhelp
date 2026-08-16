@@ -96,6 +96,16 @@ body {
   font-variant-numeric: lining-nums tabular-nums;
 }
 
+/* Bidirectional isolation.
+   The UA stylesheet already gives `bdi` `unicode-bidi: isolate`, but Tailwind's
+   Preflight is a reset and this is the one declaration on the site whose loss
+   would be silent — the page would keep rendering, with punctuation drifting to
+   the wrong end of Latin runs on `/ar` only. Stating it costs one rule.
+   See `src/components/ui/bidi.tsx` for the full explanation. */
+bdi {
+  unicode-bidi: isolate;
+}
+
 /* Visible keyboard focus is part of the §7 quality floor. Brass reads on both
    the sand page ground and the ink bands, so one rule covers the whole site. */
 :focus-visible {

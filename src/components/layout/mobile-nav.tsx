@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
+import { Bidi } from '@/components/ui/bidi';
 import { Link, usePathname } from '@/i18n/navigation';
 import { PRIMARY_NAV, whatsappUrl } from '@/lib/site';
 
@@ -71,7 +72,7 @@ export function MobileNav() {
                     href={item.href}
                     className="flex min-h-12 items-center text-[0.9375rem] text-slate"
                   >
-                    {t(`nav.${item.labelKey}`)}
+                    <Bidi>{t(`nav.${item.labelKey}`)}</Bidi>
                   </Link>
                 </li>
               ))}
@@ -84,7 +85,7 @@ export function MobileNav() {
                 rel="noopener noreferrer"
                 className="flex min-h-12 items-center justify-center rounded-[2px] bg-verdant px-5 text-sm font-semibold tracking-[0.03em] text-white"
               >
-                {t('cta.freeConsultation')}
+                <Bidi>{t('cta.freeConsultation')}</Bidi>
               </a>
               <LocaleSwitcher />
             </div>

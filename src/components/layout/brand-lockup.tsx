@@ -1,5 +1,6 @@
 import Image from 'next/image';
 
+import { Bidi } from '@/components/ui/bidi';
 import { Link } from '@/i18n/navigation';
 import { LOGO } from '@/lib/site';
 
@@ -51,7 +52,9 @@ export function BrandLockup({ tone, label, eyebrow, href }: Props) {
             onDark ? '' : 'text-ink',
           ].join(' ')}
         >
-          NUSUK HELP
+          {/* The wordmark stays Latin in both locales — it is the mark, not
+              copy — so it is a permanent LTR island on `/ar`. */}
+          <Bidi>NUSUK HELP</Bidi>
         </span>
         {eyebrow ? (
           <span
@@ -62,7 +65,7 @@ export function BrandLockup({ tone, label, eyebrow, href }: Props) {
                 : 'text-[0.5625rem] text-brass-ink sm:text-[0.65625rem]',
             ].join(' ')}
           >
-            {eyebrow}
+            <Bidi>{eyebrow}</Bidi>
           </span>
         ) : null}
       </span>

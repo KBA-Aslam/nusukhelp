@@ -100,6 +100,18 @@ server actions are directly invocable.
 **RTL.** In any shared component use logical properties only: `ms-*`, `me-*`,
 `ps-*`, `pe-*`, `start-*`, `end-*`. Never `ml-*`, `mr-*`, `left-*`, `right-*`.
 
+**Bidi isolation.** Wrap every piece of user-visible copy in `<Bidi>`
+(`src/components/ui/bidi.tsx`). Latin text inside the RTL page loses its
+sentence-final punctuation to the paragraph direction — `.across Saudi Arabia`
+— because trailing neutrals resolve to the paragraph's level, not the run's.
+`unicode-bidi: isolate` on the block does nothing (a block is already its own
+bidi paragraph, so the wrapper must be inline); `plaintext` or `direction: ltr`
+flips the base direction and left-aligns English inside a right-aligned page,
+which hides the very bugs `/ar` is there to expose. This stays after the Arabic
+translation arrives — brand names, "B2B", `+966 57 679 9128` and
+`AHR-2026-00041` are permanent Latin islands. Fix bidi problems in the markup,
+never by rewording the copy.
+
 **Numbers are integers in the DB but formatted for display** — always through
 `formatSAR()`, never raw interpolation. Dates through `formatDate()` with
 `Asia/Riyadh`.

@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 
+import { Bidi } from '@/components/ui/bidi';
 import { Link } from '@/i18n/navigation';
 import {
   EMAIL,
@@ -49,18 +50,24 @@ export function SiteFooter() {
             <BrandLockup tone="dark" label={t('meta.siteName')} />
 
             <p className="mt-5 text-[0.8125rem] text-onink-muted">
-              {t('footer.tagline')}
+              <Bidi>{t('footer.tagline')}</Bidi>
             </p>
 
             <address className="mt-6 space-y-1.5 text-[0.8125rem] not-italic text-onink-muted">
-              <p>{t('footer.location')}</p>
+              <p>
+                <Bidi>{t('footer.location')}</Bidi>
+              </p>
               <p>
                 <a
                   href={PHONE_HREF}
                   aria-label={t('footer.phoneLabel', { number: PHONE_DISPLAY })}
                   className="inline-flex min-h-9 items-center transition-colors hover:text-gilt"
                 >
-                  {PHONE_DISPLAY}
+                  {/* The leading `+` is a bidi neutral. Unisolated on `/ar` it
+                      resolves to the paragraph direction and renders at the
+                      wrong end — `966 57 679 9128+`. This one survives the
+                      Arabic translation, since the number never changes script. */}
+                  <Bidi>{PHONE_DISPLAY}</Bidi>
                 </a>
               </p>
               <p>
@@ -69,7 +76,7 @@ export function SiteFooter() {
                   aria-label={t('footer.emailLabel', { address: EMAIL })}
                   className="inline-flex min-h-9 items-center transition-colors hover:text-gilt"
                 >
-                  {EMAIL}
+                  <Bidi>{EMAIL}</Bidi>
                 </a>
               </p>
             </address>
@@ -108,16 +115,16 @@ export function SiteFooter() {
             />
             <span className="flex flex-col">
               <span className="text-[0.8125rem] font-semibold tracking-[0.09em] text-gilt">
-                {t('footer.division.name')}
+                <Bidi>{t('footer.division.name')}</Bidi>
               </span>
               <span className="mt-0.5 text-xs text-onink-muted">
-                {t('footer.division.relationship')}
+                <Bidi>{t('footer.division.relationship')}</Bidi>
               </span>
             </span>
           </div>
 
           <p className="max-w-xl text-xs leading-relaxed text-onink-muted lg:text-end">
-            {t('footer.disclaimer')}
+            <Bidi>{t('footer.disclaimer')}</Bidi>
           </p>
         </div>
       </div>
@@ -139,7 +146,7 @@ function FooterColumn({
   return (
     <nav aria-label={heading}>
       <h2 className="text-[0.6875rem] font-semibold tracking-[0.24em] text-gilt uppercase">
-        {heading}
+        <Bidi>{heading}</Bidi>
       </h2>
       <ul className="mt-4 space-y-0.5">
         {items.map((item) => (
@@ -148,7 +155,7 @@ function FooterColumn({
               href={item.href}
               className="inline-flex min-h-9 items-center text-[0.8125rem] text-onink transition-colors hover:text-gilt"
             >
-              {t(item.labelKey)}
+              <Bidi>{t(item.labelKey)}</Bidi>
             </Link>
           </li>
         ))}

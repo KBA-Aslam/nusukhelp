@@ -5,6 +5,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
+import { Bidi } from '@/components/ui/bidi';
 import {
   localeDirection,
   localeHtmlLang,
@@ -121,7 +122,7 @@ function SkipLink() {
       href="#main"
       className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-3 focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-[2px] focus:bg-verdant focus:px-4 focus:text-sm focus:font-semibold focus:text-white"
     >
-      {t('toContent')}
+      <Bidi>{t('toContent')}</Bidi>
     </a>
   );
 }

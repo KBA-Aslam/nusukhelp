@@ -1,6 +1,8 @@
 import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
 
+import { Bidi } from '@/components/ui/bidi';
+
 /**
  * Landing page — Phase 3 placeholder.
  *
@@ -30,13 +32,13 @@ function HomeContent() {
   return (
     <div className="mx-auto max-w-[90rem] px-5 py-20 sm:px-8 lg:px-12 lg:py-28">
       <p className="font-sans text-[0.6875rem] font-semibold tracking-[0.24em] text-brass-ink uppercase">
-        {t('eyebrow')}
+        <Bidi>{t('eyebrow')}</Bidi>
       </p>
       <h1 className="mt-5 max-w-3xl font-display text-4xl leading-[1.15] text-ink sm:text-5xl lg:text-6xl">
-        {t('title')}
+        <Bidi>{t('title')}</Bidi>
       </h1>
       <p className="mt-6 max-w-2xl text-base leading-relaxed text-slate sm:text-lg">
-        {t('body')}
+        <Bidi>{t('body')}</Bidi>
       </p>
     </div>
   );

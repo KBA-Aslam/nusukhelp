@@ -1,5 +1,6 @@
 import { useTranslations } from 'next-intl';
 
+import { Bidi } from '@/components/ui/bidi';
 import { Link } from '@/i18n/navigation';
 import { PRIMARY_NAV, whatsappUrl } from '@/lib/site';
 
@@ -41,7 +42,7 @@ export function SiteHeader() {
                   href={item.href}
                   className="text-sm text-slate transition-colors hover:text-verdant"
                 >
-                  {t(`nav.${item.labelKey}`)}
+                  <Bidi>{t(`nav.${item.labelKey}`)}</Bidi>
                 </Link>
               </li>
             ))}
@@ -59,7 +60,7 @@ export function SiteHeader() {
             rel="noopener noreferrer"
             className="hidden min-h-11 items-center rounded-[2px] bg-verdant px-6 text-sm font-semibold tracking-[0.03em] text-white transition-colors hover:bg-pine lg:inline-flex"
           >
-            {t('cta.freeConsultation')}
+            <Bidi>{t('cta.freeConsultation')}</Bidi>
           </a>
 
           <MobileNav />
