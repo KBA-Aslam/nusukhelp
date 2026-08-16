@@ -1,24 +1,121 @@
 @import "tailwindcss";
 
-/* Brand tokens, measured from the supplied logo artwork (§7). */
-@theme {
-  --color-ink: #0c2923;
-  --color-pine: #0b3b31;
-  --color-verdant: #14614c;
-  --color-sand: #faf7f1;
-  --color-brass: #b08e4f;
-  --color-gilt: #d4b467;
-  --color-mist: #e7efea;
-  --color-slate: #47554f;
+/* ==========================================================================
+   Design tokens
+   ==========================================================================
 
+   Tailwind v4 has no JS config file — `@theme` *is* the Tailwind config, and
+   every `--color-*` entry here generates the matching `bg-*`, `text-*`,
+   `border-*` and `ring-*` utilities.
+
+   The eight values in the first block are the §7 palette, reproduced exactly.
+   They were sampled from the supplied logo artwork rather than invented, and
+   the same palette carries the public site, the admin panel and the invoice
+   PDF so printed documents match the brand. Do not adjust them to taste.
+   -------------------------------------------------------------------------- */
+
+@theme {
+  /* --- §7 palette — exact, do not modify ------------------------------- */
+  --color-ink: #0c2923; /* deep pine — AHR tile ground; darkest surface */
+  --color-pine: #0b3b31; /* brand green — Nusuk calligraphy            */
+  --color-verdant: #14614c; /* mid green — primary actions                */
+  --color-brass: #b08e4f; /* gold in the Nusuk mark — accents on light  */
+  --color-gilt: #d4b467; /* gold in the AHR mark — accents on dark     */
+  --color-mist: #e7efea; /* pale green tint — section backgrounds      */
+  --color-sand: #faf7f1; /* warm off-white — page ground               */
+  --color-slate: #47554f; /* body text                                  */
+
+  /* --- Supporting neutrals — measured from the prototype ----------------
+     Not part of the §7 eight. These are the greys the mockups actually use
+     for hairlines and secondary text, pulled out of the SVGs so they are
+     named in one place instead of hard-coded per component. */
+  --color-hairline: #d6dfda; /* 1px card and divider strokes on light   */
+  --color-muted: #8a968f; /* secondary label text on light           */
+  --color-placeholder: #9aa8a2; /* input placeholder text                  */
+  --color-onink: #b9c9c2; /* body text on ink   — 9.0:1 contrast     */
+  --color-onink-muted: #8fa69d; /* muted text on ink  — 6.0:1 contrast     */
+  --color-panel: #123a30; /* raised panel fill on ink                */
+  --color-panel-deep: #0a342b; /* card fill on ink                        */
+
+  /* --- Accessibility correction ----------------------------------------
+     `--color-brass` is 2.9:1 against `--color-sand`, which is fine for the
+     hairline rules and decorative strokes it was measured from, but fails
+     WCAG AA for the tracked-capital eyebrows the prototype also sets in it.
+     The §7 quality floor requires AA, so text-on-light uses this darkened
+     brass (4.7:1) while `--color-brass` keeps its role for rules, borders
+     and ornament. `--color-gilt` on `--color-ink` is 7.8:1 and needs no
+     equivalent. See the note raised against §7 in the Phase 3 handover. */
+  --color-brass-ink: #8a6a38;
+
+  /* --- Type -------------------------------------------------------------
+     Marcellus is display only: headings, never body or UI. The Arabic stack
+     is layered in under `[lang='ar']` below rather than declared here, so a
+     component never has to branch on locale to pick a family. */
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-marcellus), Georgia, "Times New Roman", serif;
+
+  /* --- Geometry ---------------------------------------------------------
+     "Everything stays flat: hairline rules, 2px radius, no drop shadows."
+     The 3px radius appears on a few prototype cards; 2px is the rule. */
   --radius-sharp: 2px;
 }
 
+/* --------------------------------------------------------------------------
+   Arabic type stack
+
+   IBM Plex Sans Arabic replaces both families on `/ar`. Marcellus has no Arabic
+   glyphs at all, so an Arabic heading left in the display family would silently
+   fall through to a system serif and break the one-superfamily decision in §7.
+   Overriding the theme variables at the `<html>` level means every existing
+   `font-sans` / `font-display` utility resolves correctly without a single
+   locale conditional in a component.
+   -------------------------------------------------------------------------- */
+[lang="ar"] {
+  --font-sans: var(--font-plex-arabic), var(--font-plex-sans), ui-sans-serif,
+    system-ui, sans-serif;
+  --font-display: var(--font-plex-arabic), var(--font-plex-sans), ui-sans-serif,
+    system-ui, sans-serif;
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+
 html {
+  /* Stops iOS Safari inflating text after an orientation change. */
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
   background-color: var(--color-sand);
-  color: var(--color-ink);
+  color: var(--color-slate);
+  font-family: var(--font-sans);
+  /* Western Arabic numerals in both locales (§6) — `lnum` keeps Plex from
+     substituting old-style figures anywhere it offers them. */
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* Visible keyboard focus is part of the §7 quality floor. Brass reads on both
+   the sand page ground and the ink bands, so one rule covers the whole site. */
+:focus-visible {
+  outline: 2px solid var(--color-brass);
+  outline-offset: 2px;
+  border-radius: 1px;
+}
+
+/* Reduced motion is respected, not optional (§7). */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

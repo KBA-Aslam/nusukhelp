@@ -290,6 +290,28 @@ Every value below was sampled from the two marks, not invented. The deep green s
 
 One palette everywhere — public site, admin panel, and invoice PDF — so printed documents match the brand.
 
+#### Contrast correction — brass as text on light
+
+Added in Phase 3. `--brass` is **2.9:1** against `--sand`. That is fine for the
+hairline rules, borders and ornament it was measured from, but it fails WCAG AA
+for text — and the prototype also sets the tracked-capital eyebrows in it, at
+11px. The quality floor below requires AA, so the two uses are separated:
+
+```css
+--brass:     #B08E4F;  /* rules, borders, ornament — unchanged, §7 token */
+--brass-ink: #8A6A38;  /* brass darkened for text on light — 4.7:1 on sand */
+```
+
+`--brass-ink` is a derived value, not a ninth palette colour. It exists only so
+an eyebrow or a small label can sit on `--sand` or `--mist` and still pass. The
+darker tone is already in the design language — the *partially paid* badge in
+`prototype/01-design-system.svg` uses `#8A6A22`.
+
+No equivalent is needed on dark: `--gilt` on `--ink` is 7.8:1.
+
+Every eyebrow from Phase 4 onward uses `text-brass-ink`. If an eyebrow renders
+in `text-brass`, that is the bug.
+
 ### Logo placement — enforced, not advisory
 
 | Surface | Mark |
@@ -1324,6 +1346,15 @@ Restore must be documented and tested once before go-live. An untested backup is
 - `sitemap.xml` both locales; `robots.txt` disallowing `/admin`
 - Canonical URLs everywhere
 - WebP images with explicit dimensions
+
+**Image pipeline — decided in Phase 4, not before.** Next's default image
+optimiser needs `sharp`, which does not run on Workers, so `next/image` on this
+stack needs either Cloudflare Images or `unoptimized`. Phase 3 sidestepped the
+question rather than pre-empting it: the three brand marks are rendered with
+`next/image` and a per-image `unoptimized` prop, at roughly 3% of their native
+raster size, where the optimiser has nothing to win anyway. Nothing global is
+set. The decision lands in Phase 4, when real photography arrives and the
+tradeoff is measurable — see §19 open item 6.
 
 ---
 

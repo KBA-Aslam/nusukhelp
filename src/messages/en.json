@@ -1,0 +1,94 @@
+{
+  "meta": {
+    "siteName": "Nusuk Help",
+    "titleTemplate": "{page} · Nusuk Help",
+    "defaultTitle": "Nusuk Help — Your Trusted Hajj & Umrah Assistance Partner",
+    "defaultDescription": "Hajj and Umrah guidance, permit assistance, ziyarat, hotels, transport and complete ground handling across Saudi Arabia. Free consultation."
+  },
+
+  "skip": {
+    "toContent": "Skip to content"
+  },
+
+  "header": {
+    "homeLabel": "Nusuk Help — home",
+    "eyebrow": "Hajj · Umrah · Guidance",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "primaryNavLabel": "Primary"
+  },
+
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "reservation": "Reservation",
+    "b2b": "B2B",
+    "reviews": "Reviews",
+    "contact": "Contact"
+  },
+
+  "cta": {
+    "freeConsultation": "Free consultation"
+  },
+
+  "localeSwitcher": {
+    "label": "Language",
+    "switchTo": "Switch to {language}"
+  },
+
+  "footer": {
+    "landmarkLabel": "Site footer",
+    "tagline": "Your trusted Hajj & Umrah assistance partner",
+    "location": "Madinah al Munawarah, Saudi Arabia",
+    "phoneLabel": "Call {number}",
+    "emailLabel": "Email {address}",
+
+    "services": {
+      "heading": "Services",
+      "hotels": "Hotel reservation",
+      "transport": "Transportation",
+      "rail": "Haramain rail",
+      "ziyarat": "Ziyarat",
+      "permits": "Permit assistance",
+      "groundHandling": "Ground handling"
+    },
+
+    "b2b": {
+      "heading": "B2B",
+      "agencySupport": "Agency support",
+      "groupReservations": "Group reservations",
+      "wholesaleRates": "Wholesale rates",
+      "groundHandling": "Ground handling"
+    },
+
+    "company": {
+      "heading": "Company",
+      "about": "About us",
+      "contact": "Contact",
+      "reviews": "Reviews",
+      "privacy": "Privacy policy",
+      "terms": "Terms & conditions"
+    },
+
+    "division": {
+      "name": "Al Haramain Reservation",
+      "relationship": "a Nusuk Help B2B service division",
+      "logoAlt": "Al Haramain Reservation"
+    },
+
+    "disclaimer": "Nusuk Help is an independent travel services provider. We are not affiliated with, endorsed by, or connected to Nusuk or the Saudi Ministry of Hajj and Umrah."
+  },
+
+  "notFound": {
+    "eyebrow": "404",
+    "title": "This page isn't here",
+    "body": "The page you asked for doesn't exist, or hasn't been published yet.",
+    "backHome": "Back to the homepage"
+  },
+
+  "home": {
+    "eyebrow": "Madinah Al Munawarah · Saudi Arabia",
+    "title": "Your trusted partner for Hajj & Umrah",
+    "body": "From Nusuk guidance and pilgrimage consultancy to hotels, transport, ziyarat and complete ground handling across Saudi Arabia."
+  }
+}
