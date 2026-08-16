@@ -293,7 +293,21 @@ addresses, phone numbers such as `+966 57 679 9128` — where the leading `+` is
 itself a neutral and migrates to the wrong end — and, on the admin side from
 Phase 10, booking numbers like `AHR-2026-00041`.
 
-Fonts: Inter (Latin), IBM Plex Sans Arabic (Arabic, loaded only on `/ar`).
+### Fonts
+
+Latin: **Marcellus** for display (headings only) and **IBM Plex Sans** for body
+and UI. Arabic: **IBM Plex Sans Arabic**, loaded only on `/ar`.
+
+Marcellus has no Arabic glyphs, so `/ar` takes IBM Plex Sans Arabic for display
+as well as body — the swap is made once, on `<html>`, by overriding the two font
+theme variables under `[lang="ar"]`, so no component branches on locale to pick
+a family.
+
+> **Corrected in Phase 3.** This line previously read *"Inter (Latin)"*, carried
+> over from a draft written before the prototypes landed. It never matched §7,
+> `CLAUDE.md` or `prototype/01-design-system.svg`, all three of which specify
+> Marcellus + IBM Plex Sans. §7 is and was authoritative; Inter is not used
+> anywhere in this project.
 
 ---
 
@@ -1390,6 +1404,16 @@ raster size, where the optimiser has nothing to win anyway. Nothing global is
 set. The decision lands in Phase 4, when real photography arrives and the
 tradeoff is measurable — see §19 open item 6.
 
+**Cloudflare Images is a paid add-on. Bring the client the cost before
+configuring it — do not enable it and report the billing afterwards.** The
+client's position, and the default assumption to work from: plain `unoptimized`
+WebP at correct dimensions may well be enough at this site's traffic. So the
+Phase 4 recommendation starts from the free path and only argues for the paid
+one with measurements attached — the same standard §14 sets for the Workers Paid
+plan, where an upgrade may be recommended only above a measured threshold and
+only with the numbers. Serve correctly sized WebP by hand first; reach for the
+product if and only if the evidence says the hand-rolled path is not enough.
+
 ---
 
 ## 18. Build order
@@ -1440,7 +1464,7 @@ tradeoff is measurable — see §19 open item 6.
 
 | # | Item | Owner | Blocks | Build against |
 |---|---|---|---|---|
-| 1 | Confirm brand naming with Saudi legal advisor | Client | Go-live | Current names as specified |
+| 1 | Confirm brand naming with Saudi legal advisor — **and the affiliation disclaimer, both language versions together** | Client | Go-live | Current names as specified; disclaimer as drafted in `en.json` and `ar.json` |
 | 2 | Logo and wordmark | Client | Go-live | The prototype marks — final enough to build on |
 | 3 | WhatsApp business number for public CTAs | Client | Go-live | Placeholder number, single constant |
 | 4 | Legal name, CR number, full address, bank details | Client | Go-live | Placeholder values in `company_settings` |
@@ -1451,6 +1475,17 @@ tradeoff is measurable — see §19 open item 6.
 | 9 | Verify current ZATCA VAT registration threshold | Client | Future | n/a — see §9.9 |
 | 10 | Enable R2 on the Cloudflare account (needs a payment method on file, free 10 GB tier) | Client | **Phase 16** | Nothing — the `BACKUPS` binding stays commented out in `wrangler.jsonc` until then |
 | ~~11~~ | ~~Delete the registrar's parked `A` records on the `nusukhelp.com` apex in Cloudflare DNS~~ | Client | — | **Done in Phase 1.** Records deleted, both custom domains attached and serving over HTTPS. See §3. |
+
+Item 1 now covers two things, and they go to the advisor **together**. The
+affiliation disclaimer is a legal statement, not marketing copy, and it is the
+standing mitigation for what §7 calls the largest business risk in the project.
+An English-only version protects nobody reading Arabic, so `footer.disclaimer`
+is the one message key that is genuinely translated rather than placeholdered
+(§19 item 5 notwithstanding — see `src/messages/README.md`). Both language
+versions must be reviewed as a pair: an Arabic rendering that is weaker than the
+English one leaves the Arabic audience with a disclaimer that does not disclaim.
+It also means the disclaimer must **not** be quietly overwritten when the bulk
+translation drop lands.
 
 Item 10 is the exception to the framing above: it blocks build work, not just
 go-live. R2 was not enabled when Phase 1 shipped, and a deploy carrying an
