@@ -87,6 +87,7 @@ Email            Resend (free tier)
 Charts           Recharts
 Forms            React Hook Form + Zod
 Icons            lucide-react
+Page cache       Cloudflare KV (OpenNext incremental cache)
 Backups          Cloudflare R2 + scheduled Worker cron
 ```
 
@@ -102,7 +103,9 @@ Backups          Cloudflare R2 + scheduled Worker cron
 
 **Browser-side PDF generation.** Server-side rendering would exceed the CPU budget. `@react-pdf/renderer` runs in the admin's browser: the Worker returns booking JSON, the browser assembles and downloads the file. Zero server CPU. *Do not substitute Puppeteer or any server renderer.*
 
-**Static public pages.** All marketing pages are pre-rendered and served from the CDN without invoking a Worker.
+**Static public pages.** All marketing pages are statically generated and cache-served from Cloudflare's edge cache. The Worker is invoked only on a cache miss and on revalidation — not on every request. At this site's traffic that is still effectively free.
+
+Approving a review triggers on-demand revalidation of the landing page and `/reviews` in both locales (§13.11), so the pages are static but not frozen. That requires the OpenNext incremental cache to have somewhere to live: a KV namespace, bound in `wrangler.jsonc` from Phase 1 (§3). Note that this is what rules out a pure static export as a fallback — an export would drop revalidation, and new reviews would only appear on the next deploy.
 
 ---
 
@@ -129,12 +132,18 @@ The domain stays with its current registrar. Only nameservers move to Cloudflare
   "d1_databases": [
     { "binding": "DB", "database_name": "nusukhelp-db", "database_id": "..." }
   ],
+  "kv_namespaces": [
+    // OpenNext incremental cache — required for on-demand revalidation
+    { "binding": "NEXT_INC_CACHE_KV", "id": "..." }
+  ],
   "r2_buckets": [
     { "binding": "BACKUPS", "bucket_name": "nusukhelp-backups" }
-  ],
-  "triggers": { "crons": ["0 3 * * 1"] }  // weekly backup, Monday 03:00 UTC
+  ]
+  // No cron trigger yet — added in Phase 16 with the backup handler (§16)
 }
 ```
+
+The KV namespace is created once with `npx wrangler kv namespace create NEXT_INC_CACHE_KV` and its id pasted in. Both bindings exist from Phase 1 even though backups aren't written until Phase 16; the cron **trigger** does not, because a schedule firing at a handler that doesn't exist is noise in the logs and a false sense of coverage.
 
 ### Secrets
 
@@ -1218,7 +1227,7 @@ WhatsApp converts far better in this market; the form is a fallback and a record
 
 ## 16. Backups
 
-**Automated** — scheduled Worker, weekly (Monday 03:00 UTC), exports `bookings`, `booking_rooms`, `booking_services`, `payments`, `agencies`, and `company_settings` as JSON to R2 under `backups/{YYYY-MM-DD}.json`. Retain 12 weeks.
+**Automated** — scheduled Worker, weekly (Monday 03:00 UTC). The cron trigger is added to `wrangler.jsonc` in Phase 16, when the handler exists — not in Phase 1. It exports `bookings`, `booking_rooms`, `booking_services`, `payments`, `agencies`, and `company_settings` as JSON to R2 under `backups/{YYYY-MM-DD}.json`. Retain 12 weeks.
 
 **Manual** — monthly `wrangler d1 export nusukhelp-db --output=./backup.sql`, stored outside Cloudflare.
 
@@ -1228,7 +1237,7 @@ Restore must be documented and tested once before go-live. An untested backup is
 
 ## 17. SEO
 
-- All public pages statically generated
+- All public pages statically generated and cache-served; the Worker runs only on cache miss and on revalidation
 - Unique title and meta description per page per locale
 - `hreflang` alternates (`en`, `ar`, `x-default`)
 - Open Graph and Twitter cards
@@ -1245,7 +1254,7 @@ Restore must be documented and tested once before go-live. An untested backup is
 
 ### Release 1 — Public website
 
-**Phase 1 — Foundation.** Next.js + TypeScript + Tailwind v4, OpenNext Cloudflare adapter, Wrangler config, D1 created, Drizzle configured. Deploy hello-world to the custom domain. *Verify deployment before writing features.*
+**Phase 1 — Foundation.** Next.js + TypeScript + Tailwind v4, OpenNext Cloudflare adapter, Wrangler config, D1 created, KV namespace created and bound for the incremental cache, R2 bucket bound, Drizzle configured. No cron trigger yet. Deploy hello-world to the custom domain. *Verify deployment before writing features.*
 
 **Phase 2 — Public schema.** `reviews`, `enquiries`, `company_settings`. Migration applied.
 
@@ -1277,7 +1286,7 @@ Restore must be documented and tested once before go-live. An untested backup is
 
 **Phase 15 — Reminders & moderation.** Reminder CRUD, dashboard surfacing, review moderation queue, enquiry triage.
 
-**Phase 16 — Hardening.** Backup cron, restore test, permission audit across all roles, and the **full device QA matrix in section 20.6** — every cell, on real hardware. Mobile issues found here are expensive; catching them at each phase is cheaper than a single pass at the end.
+**Phase 16 — Hardening.** Backup handler plus the cron trigger added to `wrangler.jsonc`, restore test, permission audit across all roles, and the **full device QA matrix in section 20.6** — every cell, on real hardware. Mobile issues found here are expensive; catching them at each phase is cheaper than a single pass at the end.
 
 ---
 

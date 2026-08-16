@@ -26,6 +26,17 @@ next-intl (en / ar, public side only)
 Cloudflare Turnstile · Resend · Recharts · React Hook Form + Zod
 ```
 
+**Rendering model.** Public pages are statically generated and cache-served from
+Cloudflare's edge cache — the Worker runs only on a cache miss and on
+revalidation, not on every request. Approving a review triggers on-demand
+revalidation, so the OpenNext incremental cache needs a KV namespace bound in
+`wrangler.jsonc` (`NEXT_INC_CACHE_KV`) from Phase 1. Do not describe the public
+site as "never invoking a Worker" — that was wrong.
+
+**Cron triggers land with their handlers.** `wrangler.jsonc` carries the D1, KV,
+and R2 bindings from Phase 1, but no `triggers.crons` block until Phase 16, when
+the backup handler actually exists.
+
 **Never suggest or configure:**
 
 - **Vercel** — its Hobby plan prohibits commercial use, and this is a commercial site.
@@ -216,4 +227,6 @@ npx wrangler d1 export nusukhelp-db --output=./backup.sql
 Cloudflare + OpenNext has more deployment friction than Vercel. If the adapter
 fights you, say so rather than silently switching hosts. The fallback is a static
 export of the public site on Cloudflare Pages with admin as a separate Worker —
-not a move to Vercel.
+not a move to Vercel. Note the cost of that fallback: a pure export drops
+on-demand revalidation, so an approved review would not appear until the next
+deploy. Raise it before taking that route.
