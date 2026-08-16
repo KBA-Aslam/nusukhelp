@@ -86,6 +86,13 @@ recalculates on payment changes **and** on booking edits.
 checked_out → completed, plus cancelled) and `paymentStatus` (unpaid →
 partially_paid → paid). A booking can be confirmed and partially paid at once.
 
+**Drafts live on the server, and nothing deletes them on a schedule.** A draft is a
+`bookings` row with `bookingNumber = null`, autosaved on every step change — never
+browser storage. Drafts untouched for 30 days surface under a **Drafts** filter in
+`/admin/bookings` for a human to delete. No TTL purge, no cleanup cron: silently
+deleting someone's half-finished work is worse than clutter. Apply the same
+instinct anywhere else staff-entered data goes stale.
+
 **Auth is checked twice.** Middleware guards `/admin/*`, and *every server action
 independently re-checks session and role*. Middleware alone is not sufficient —
 server actions are directly invocable.

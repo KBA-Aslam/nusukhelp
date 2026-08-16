@@ -95,6 +95,15 @@ Backups          Cloudflare R2 + scheduled Worker cron
 
 > **Watch item.** The Cloudflare free plan allows 10 ms CPU per request and 5M D1 row-reads/day. The dashboard's aggregate queries and the scheduler are heavier than a simple list view. If either becomes slow, the Workers Paid plan at $5/month raises CPU to 30 seconds. Build on free; upgrade if measurements say so, not preemptively.
 
+**What "measurements say so" means, concretely.** Measure at the end of Phase 14 — once the dashboard aggregates, the scheduler, and the reports all exist, because those are the heavy paths and anything measured earlier is measuring the easy case. Take the numbers from `npx wrangler tail` and the Cloudflare dashboard analytics, and report two figures:
+
+```
+p95 CPU per request      upgrade threshold  > 8 ms
+D1 rows read per day     upgrade threshold  > 3M/day
+```
+
+Either threshold being crossed justifies recommending the $5/month Workers Paid plan. Neither being crossed means staying on free. **Any recommendation to upgrade must arrive with the measurements attached** — not as a precaution, not as a hunch, and not before Phase 14 is finished.
+
 ### Why these choices
 
 **Cloudflare over Vercel.** Vercel's Hobby plan prohibits commercial use, and its definition covers lead-generating business sites; Pro is $20/month/seat. Cloudflare's free tier has no commercial-use restriction. *(Any recommendation to host this on Vercel should be disregarded — it is a licence violation for this project.)*
@@ -812,9 +821,19 @@ The company is **not VAT-registered**. Therefore:
 - No VAT line, no tax subtotal
 - No ZATCA QR code or cryptographic stamp
 
-`vatAmount` exists at `0` so future registration is a template change, not a migration.
+**`vatAmount` stays in the schema at `0`.** It is deliberate, not vestigial. Registering for VAT later needs more than one column — a rate in `company_settings` and a change to the invoice template as well — and having the column already there makes that migration smaller. Nothing writes to it in the meantime; it is never displayed, never summed, and never rendered on either PDF style.
+
+**The footer disclaimer is approved copy.** The invoice footer reads *"Not a tax invoice. The company is not VAT-registered."* This does not conflict with Appendix A, which forbids **titling** the document "Tax Invoice". The document is titled "INVOICE"; the footer is a factual disclaimer about registration status, and stating it plainly is the point.
 
 > Saudi VAT registration becomes mandatory once annual taxable supplies exceed a ZATCA-set threshold. Confirm the current figure with an accountant.
+
+### 9.10 Drafts
+
+A draft is a real row in `bookings` with `bookingNumber = null` and `status = 'draft'`, autosaved server-side on every step change (§20.4). **No browser storage** — not `localStorage`, not `sessionStorage`. Losing twenty minutes of entry to a dropped connection is the failure mode that makes staff stop using the system, and a draft that only exists in one phone's browser is already lost.
+
+Drafts are excluded from every count, total, and scheduler view, and carry no booking number until confirmation (§9.1), so abandoned ones cost nothing but clutter.
+
+**Cleanup is manual, never automatic.** Drafts with no activity for 30 days surface under a **Drafts** filter in `/admin/bookings`, where a person can review and delete them deliberately. There is no TTL purge and no scheduled cleanup job — silently deleting someone's half-finished work is worse than leaving clutter in a list. Drafts remain the only records that can be removed outright (§9.8), and even then only by a human acting on purpose.
 
 ---
 
@@ -1087,6 +1106,8 @@ Step 7  Review      totals, discount, notes, due date → Save draft / Confirm
 
 Running total visible throughout. From an agency profile, **+ New booking** pre-fills step 1 and skips to step 2.
 
+The form autosaves to a server-side draft row on every step change, per §9.10 — the draft is a `bookings` record with `bookingNumber = null`, never browser storage.
+
 Confirming allocates the booking number. Editing afterwards uses the same form, pre-filled, with the guards in section 9.3.
 
 ### 13.4 Booking detail — the main working screen
@@ -1118,6 +1139,8 @@ Dedicated list views at `/admin/schedule/check-ins` and `/check-outs`, filterabl
 Search across: booking number, agency name, contact person, guest name, hotel name, confirmation number, BRN/VRN, phone.
 
 Filter by: status, payment status, date range (booking / check-in / check-out), agency, hotel, city, created-by.
+
+A **Drafts** filter lists draft bookings, with those untouched for 30 days marked as stale for manual deletion (§9.10). Nothing here deletes on a schedule.
 
 ### 13.7 Reports
 
@@ -1274,7 +1297,7 @@ Restore must be documented and tested once before go-live. An untested backup is
 
 **Phase 9 — Foundations.** Lookup tables with seed data, company settings page, agencies CRUD.
 
-**Phase 10 — Bookings.** Full schema. Stepped mobile-first creation form. Rooms and services repeaters. Server-side calculation. Draft save. Confirm with atomic numbering. List with search and filters. Detail screen. Edit with the section 9.3 guards. Cancel. Audit logging with before/after values.
+**Phase 10 — Bookings.** Full schema. Stepped mobile-first creation form. Rooms and services repeaters. Server-side calculation. Server-side draft autosave on step change. Confirm with atomic numbering. List with search and filters, including the Drafts filter with 30-day stale marking for manual deletion (§9.10). Detail screen. Edit with the section 9.3 guards. Cancel. Audit logging with before/after values.
 
 **Phase 11 — Payments.** Unlimited instalments recorded against a booking. Derived `amountPaid` and `paymentStatus`, recalculated on payment *and* on booking edit. Reversal with reason. Payment history on the booking detail screen.
 
@@ -1282,7 +1305,7 @@ Restore must be documented and tested once before go-live. An untested backup is
 
 **Phase 13 — Scheduler.** Calendar with four views, check-in and check-out lists with filters, completion page and dashboard alert.
 
-**Phase 14 — Dashboard & reports.** Aggregates, cards, alerts, charts, monthly and annual reports, CSV export.
+**Phase 14 — Dashboard & reports.** Aggregates, cards, alerts, charts, monthly and annual reports, CSV export. **Ends with the plan measurement in §2** — p95 CPU per request and D1 rows read per day, from `wrangler tail` and dashboard analytics. Recommend the Workers Paid plan only if p95 CPU > 8 ms or rows read > 3M/day, and only with the numbers attached.
 
 **Phase 15 — Reminders & moderation.** Reminder CRUD, dashboard surfacing, review moderation queue, enquiry triage.
 
@@ -1292,17 +1315,25 @@ Restore must be documented and tested once before go-live. An untested backup is
 
 ## 19. Open items
 
-| # | Item | Owner | Blocks |
-|---|---|---|---|
-| 1 | Confirm brand naming with Saudi legal advisor | Client | Brand assets, launch |
-| 2 | Logo and wordmark | Client | Phase 3 |
-| 3 | WhatsApp business number for public CTAs | Client | Phase 6 |
-| 4 | Legal name, CR number, full address, bank details | Client | Phase 9 |
-| 5 | Arabic translation of all public copy | Client | Phase 4 |
-| 6 | Photography for landing and service sections | Client | Phase 4 |
-| 7 | Confirm hotel list for initial seed | Client | Phase 9 |
-| 8 | Legal review of permit-assistance copy | Client | Phase 5 |
-| 9 | Verify current ZATCA VAT registration threshold | Client | Future |
+**These block go-live, not the build.** Every phase proceeds with placeholders and swaps in the real asset when it lands. Nothing on this list is a reason to stop or to wait.
+
+| # | Item | Owner | Blocks | Build against |
+|---|---|---|---|---|
+| 1 | Confirm brand naming with Saudi legal advisor | Client | Go-live | Current names as specified |
+| 2 | Logo and wordmark | Client | Go-live | The prototype marks — final enough to build on |
+| 3 | WhatsApp business number for public CTAs | Client | Go-live | Placeholder number, single constant |
+| 4 | Legal name, CR number, full address, bank details | Client | Go-live | Placeholder values in `company_settings` |
+| 5 | Arabic translation of all public copy | Client | Go-live | Real keys, English placeholder values |
+| 6 | Photography for landing and service sections | Client | Go-live | Solid colour blocks at the correct aspect ratios |
+| 7 | Confirm hotel list for initial seed | Client | Go-live | A sample seed list |
+| 8 | Legal review of permit-assistance copy | Client | Go-live | The copy as drafted, per Appendix A |
+| 9 | Verify current ZATCA VAT registration threshold | Client | Future | n/a — see §9.9 |
+
+Two placeholder rules matter more than the rest:
+
+**Copy.** Write everything in English first. The Arabic message files still get the **real keys** immediately, with English strings as their placeholder values — that way the `/ar` routes render, the RTL layout is testable throughout the build, and the translation drop is a values-only change with no structural surprises. Do not defer the Arabic files until the translation arrives.
+
+**Imagery.** Where photography goes, use solid colour blocks at the **correct aspect ratios**. Wrong-ratio placeholders hide exactly the layout bugs the placeholder is there to expose.
 
 ---
 
