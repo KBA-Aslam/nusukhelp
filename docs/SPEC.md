@@ -129,13 +129,19 @@ The domain stays with its current registrar. Only nameservers move to Cloudflare
 3. Replace nameservers at the registrar with the two Cloudflare provides
 4. Worker → Settings → Domains & Routes → Add Custom Domain
 
-> **Status after Phase 1.** Steps 1–3 are done: the zone is live on Cloudflare
-> nameservers (`fatima`/`ruben`). Step 4 is not, because the apex still carries
-> the registrar's parked `A` records and the Workers domains API rejects a
-> hostname with externally managed DNS (code 100117). Delete those two `A`
-> records, then uncomment the `routes` block in `wrangler.jsonc` and redeploy.
-> Tracked as §19 open item 11. The zone has **no `MX` records at all**, so the
-> mail warning below turned out not to apply — nothing to preserve.
+> **Status: complete as of Phase 1.** The zone is Active on Cloudflare
+> nameservers (`fatima`/`ruben`), and `nusukhelp.com` and `www.nusukhelp.com`
+> are both attached to the Worker as Custom Domains, serving over HTTPS.
+>
+> Step 4 initially failed: the apex carried the registrar's parked `A` records,
+> and the Workers domains API rejects a hostname with externally managed DNS
+> (code 100117). Deleting those two records cleared it. The zone has **no `MX`
+> records at all**, so the mail warning below turned out not to apply.
+>
+> Wrangler now owns the proxied DNS records for both hostnames. Do not add `A`
+> or `CNAME` records for them by hand — that recreates the same conflict, and
+> because the trigger step is atomic it would break every subsequent deploy,
+> not just the domain attachment.
 
 > **Before switching nameservers:** export or screenshot every existing DNS record — especially MX, SPF, DKIM, and DMARC. The company uses `Nusukhelp@outlook.com`; if that mailbox is tied to this domain and its MX records are missed during import, email stops working silently. Verify every record while the old nameservers are still authoritative.
 
@@ -1354,22 +1360,22 @@ Restore must be documented and tested once before go-live. An untested backup is
 | 8 | Legal review of permit-assistance copy | Client | Go-live | The copy as drafted, per Appendix A |
 | 9 | Verify current ZATCA VAT registration threshold | Client | Future | n/a — see §9.9 |
 | 10 | Enable R2 on the Cloudflare account (needs a payment method on file, free 10 GB tier) | Client | **Phase 16** | Nothing — the `BACKUPS` binding stays commented out in `wrangler.jsonc` until then |
-| 11 | Delete the registrar's parked `A` records on the `nusukhelp.com` apex in Cloudflare DNS | Client | **Custom domains** | The `workers.dev` preview URL — both `routes` entries stay commented out in `wrangler.jsonc` until then |
+| ~~11~~ | ~~Delete the registrar's parked `A` records on the `nusukhelp.com` apex in Cloudflare DNS~~ | Client | — | **Done in Phase 1.** Records deleted, both custom domains attached and serving over HTTPS. See §3. |
 
-Items 10 and 11 are the exceptions to the framing above: they block build work,
-not just go-live. R2 was not enabled when Phase 1 shipped, and a deploy carrying an
+Item 10 is the exception to the framing above: it blocks build work, not just
+go-live. R2 was not enabled when Phase 1 shipped, and a deploy carrying an
 `r2_buckets` binding for a bucket that does not exist fails outright — so the
 binding is commented out rather than present. Nothing writes to R2 before
 Phase 16, so the deferral is free until then. See §16 for the full prerequisite.
 
-Item 11 is what keeps the site on a `workers.dev` URL. The apex still serves the
-registrar's parking page from imported `A` records, and the Workers domains API
-will not take a hostname that already has externally managed DNS records
-(code 100117). Because the trigger step is atomic, that single conflict aborts
-the whole deploy — `www` and the preview URL included — which is why neither
-route is left in the config. Deleting the two apex `A` records in the Cloudflare
-DNS tab is the entire fix; there are no `MX` records on the zone, so the
-`Nusukhelp@outlook.com` mailbox is unaffected. See §3.
+Item 11 is closed. It is left in the table rather than deleted because the
+failure mode is worth remembering: the Workers domains API will not take a
+hostname that already has externally managed DNS records (code 100117), and
+because the trigger step is atomic, that single conflict aborted the entire
+deploy — `www` and the `workers.dev` preview URL included, not just the apex.
+Deleting the two parked `A` records was the whole fix. Wrangler now owns the
+records for both hostnames; adding one by hand would reproduce the same
+breakage. See §3.
 
 Two placeholder rules matter more than the rest:
 

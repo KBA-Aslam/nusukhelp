@@ -19,23 +19,12 @@
   // go-live — a second reachable hostname is duplicate content (§17).
   "workers_dev": true,
 
-  // Custom domains (§3). Both hostnames are commented out, not missing.
-  //
-  // The apex still carries the registrar's parked A records, which the Workers
-  // domains API refuses to take over: "Hostname 'nusukhelp.com' already has
-  // externally managed DNS records (A, CNAME, etc)" [code 100117]. The trigger
-  // step is atomic, so that one conflict aborts the whole thing — www and the
-  // workers.dev preview URL included. Leaving these in place would make every
-  // future phase undeployable, not just this one.
-  //
-  // Uncomment both once the parked A records are deleted from the zone
-  // (§19 open item 11). Until then the site is verified on the workers.dev
-  // preview URL above.
-  //
-  // "routes": [
-  //   { "pattern": "nusukhelp.com", "custom_domain": true },
-  //   { "pattern": "www.nusukhelp.com", "custom_domain": true }
-  // ],
+  // Custom domains (§3). Wrangler manages the proxied DNS records for both
+  // hostnames; do not add A or CNAME records for them by hand.
+  "routes": [
+    { "pattern": "nusukhelp.com", "custom_domain": true },
+    { "pattern": "www.nusukhelp.com", "custom_domain": true }
+  ],
 
   "d1_databases": [
     {
