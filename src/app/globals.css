@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+/* Brand tokens, measured from the supplied logo artwork (§7). */
+@theme {
+  --color-ink: #0c2923;
+  --color-pine: #0b3b31;
+  --color-verdant: #14614c;
+  --color-sand: #faf7f1;
+  --color-brass: #b08e4f;
+  --color-gilt: #d4b467;
+  --color-mist: #e7efea;
+  --color-slate: #47554f;
+
+  --radius-sharp: 2px;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--color-sand);
+  color: var(--color-ink);
+}

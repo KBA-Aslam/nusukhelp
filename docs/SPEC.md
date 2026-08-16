@@ -129,6 +129,14 @@ The domain stays with its current registrar. Only nameservers move to Cloudflare
 3. Replace nameservers at the registrar with the two Cloudflare provides
 4. Worker → Settings → Domains & Routes → Add Custom Domain
 
+> **Status after Phase 1.** Steps 1–3 are done: the zone is live on Cloudflare
+> nameservers (`fatima`/`ruben`). Step 4 is not, because the apex still carries
+> the registrar's parked `A` records and the Workers domains API rejects a
+> hostname with externally managed DNS (code 100117). Delete those two `A`
+> records, then uncomment the `routes` block in `wrangler.jsonc` and redeploy.
+> Tracked as §19 open item 11. The zone has **no `MX` records at all**, so the
+> mail warning below turned out not to apply — nothing to preserve.
+
 > **Before switching nameservers:** export or screenshot every existing DNS record — especially MX, SPF, DKIM, and DMARC. The company uses `Nusukhelp@outlook.com`; if that mailbox is tied to this domain and its MX records are missed during import, email stops working silently. Verify every record while the old nameservers are still authoritative.
 
 ### Bindings
@@ -1250,6 +1258,23 @@ WhatsApp converts far better in this market; the form is a fallback and a record
 
 ## 16. Backups
 
+> **Two prerequisites before this phase can start**, neither of which was in
+> place at Phase 1:
+>
+> 1. **R2 must be enabled on the Cloudflare account.** It was not, and the API
+>    returns error 10042 (*"Please enable R2 through the Cloudflare Dashboard"*)
+>    for both bucket creation and any deploy carrying an R2 binding. Enabling it
+>    requires a payment method on file even for the free 10 GB tier. Tracked as
+>    §19 open item 10, owner Client.
+> 2. **Wrangler must be re-authenticated with the `r2` scope.** The OAuth token
+>    minted at Phase 1 has `d1`, `workers_kv`, and `workers*` but no `r2` scope
+>    at all, so a fresh `wrangler login` is needed after R2 is switched on.
+>
+> Then: `npx wrangler r2 bucket create nusukhelp-backups`, uncomment the
+> `r2_buckets` block in `wrangler.jsonc`, re-run `npm run cf-typegen` to pick up
+> the `BACKUPS` binding in `worker-configuration.d.ts`, and
+> deploy. Do not add the cron trigger before the handler exists.
+
 **Automated** — scheduled Worker, weekly (Monday 03:00 UTC). The cron trigger is added to `wrangler.jsonc` in Phase 16, when the handler exists — not in Phase 1. It exports `bookings`, `booking_rooms`, `booking_services`, `payments`, `agencies`, and `company_settings` as JSON to R2 under `backups/{YYYY-MM-DD}.json`. Retain 12 weeks.
 
 **Manual** — monthly `wrangler d1 export nusukhelp-db --output=./backup.sql`, stored outside Cloudflare.
@@ -1328,6 +1353,23 @@ Restore must be documented and tested once before go-live. An untested backup is
 | 7 | Confirm hotel list for initial seed | Client | Go-live | A sample seed list |
 | 8 | Legal review of permit-assistance copy | Client | Go-live | The copy as drafted, per Appendix A |
 | 9 | Verify current ZATCA VAT registration threshold | Client | Future | n/a — see §9.9 |
+| 10 | Enable R2 on the Cloudflare account (needs a payment method on file, free 10 GB tier) | Client | **Phase 16** | Nothing — the `BACKUPS` binding stays commented out in `wrangler.jsonc` until then |
+| 11 | Delete the registrar's parked `A` records on the `nusukhelp.com` apex in Cloudflare DNS | Client | **Custom domains** | The `workers.dev` preview URL — both `routes` entries stay commented out in `wrangler.jsonc` until then |
+
+Items 10 and 11 are the exceptions to the framing above: they block build work,
+not just go-live. R2 was not enabled when Phase 1 shipped, and a deploy carrying an
+`r2_buckets` binding for a bucket that does not exist fails outright — so the
+binding is commented out rather than present. Nothing writes to R2 before
+Phase 16, so the deferral is free until then. See §16 for the full prerequisite.
+
+Item 11 is what keeps the site on a `workers.dev` URL. The apex still serves the
+registrar's parking page from imported `A` records, and the Workers domains API
+will not take a hostname that already has externally managed DNS records
+(code 100117). Because the trigger step is atomic, that single conflict aborts
+the whole deploy — `www` and the preview URL included — which is why neither
+route is left in the config. Deleting the two apex `A` records in the Cloudflare
+DNS tab is the entire fix; there are no `MX` records on the zone, so the
+`Nusukhelp@outlook.com` mailbox is unaffected. See §3.
 
 Two placeholder rules matter more than the rest:
 

@@ -21,6 +21,9 @@ worker-configuration.d.ts
 .dev.vars
 .dev.vars.*
 
+# typescript build info
+*.tsbuildinfo
+
 # misc
 .DS_Store
 Thumbs.db

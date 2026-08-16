@@ -1,0 +1,76 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nusukhelp",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-11",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  "observability": {
+    "enabled": true
+  },
+
+  // Build-phase preview URL on *.workers.dev. This exists so each phase can be
+  // verified over HTTPS before the custom domains are attached. Turn it off at
+  // go-live — a second reachable hostname is duplicate content (§17).
+  "workers_dev": true,
+
+  // Custom domains (§3). Both hostnames are commented out, not missing.
+  //
+  // The apex still carries the registrar's parked A records, which the Workers
+  // domains API refuses to take over: "Hostname 'nusukhelp.com' already has
+  // externally managed DNS records (A, CNAME, etc)" [code 100117]. The trigger
+  // step is atomic, so that one conflict aborts the whole thing — www and the
+  // workers.dev preview URL included. Leaving these in place would make every
+  // future phase undeployable, not just this one.
+  //
+  // Uncomment both once the parked A records are deleted from the zone
+  // (§19 open item 11). Until then the site is verified on the workers.dev
+  // preview URL above.
+  //
+  // "routes": [
+  //   { "pattern": "nusukhelp.com", "custom_domain": true },
+  //   { "pattern": "www.nusukhelp.com", "custom_domain": true }
+  // ],
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nusukhelp-db",
+      "database_id": "50a17b2a-90cf-43cc-8471-b510b05cc52c",
+      "preview_database_id": "0860ce4f-8926-4f3a-9ecc-8146aad82ebf",
+      "migrations_dir": "drizzle/migrations"
+    }
+  ],
+
+  "kv_namespaces": [
+    // OpenNext incremental cache — required for on-demand revalidation (§2, §3).
+    {
+      "binding": "NEXT_INC_CACHE_KV",
+      "id": "e209ce1861c5415494612f542e006d7a"
+    }
+  ]
+
+  // BACKUPS is commented out, not missing. R2 is not yet enabled on the
+  // Cloudflare account (API error 10042), so `nusukhelp-backups` does not exist
+  // and any deploy carrying this binding fails outright — including deploys of
+  // phases that have nothing to do with backups.
+  //
+  // Uncomment in Phase 16, once the account has R2 enabled (§19 open item 10)
+  // and the bucket has been created. Nothing writes to R2 before then, so the
+  // deferral costs nothing; see §16.
+  //
+  // "r2_buckets": [
+  //   {
+  //     "binding": "BACKUPS",
+  //     "bucket_name": "nusukhelp-backups"
+  //   }
+  // ]
+
+  // No "triggers.crons" block. The weekly backup schedule is added in Phase 16,
+  // together with the handler it fires at (§3, §16).
+}
