@@ -708,6 +708,31 @@ export const auditLog = sqliteTable('audit_log', {
 }, (t) => [index('idx_audit_entity').on(t.entityType, t.entityId)]);
 ```
 
+### Deferred constraints — `reviews.reviewedBy`, `enquiries.handledBy`
+
+The schema above is the **target** state. Two of its foreign keys cannot be
+created in the phase that creates their table.
+
+`reviews` and `enquiries` ship in Phase 2, on the public side. Their moderation
+columns — `reviewedBy` and `handledBy` — point at `user.id`, but the `user`
+table does not exist until Phase 8. D1 enforces foreign keys, and SQLite
+resolves the parent table at write time rather than at `CREATE TABLE`: with the
+parent missing, **any** insert into the child fails with
+`no such table: main.user`, including inserts that leave the key `NULL`.
+Shipping the constraint in Phase 2 would therefore break public review and
+enquiry submission in Phase 6.
+
+Both columns are consequently created as plain `text` in migration `0000`, with
+no `.references()` in `src/db/schema.ts`. **Phase 8 adds the constraint**, once
+`user` exists. SQLite cannot add a foreign key to an existing column via
+`ALTER TABLE`, so the Phase 8 migration does it by table rebuild: create the new
+table with the constraint, `INSERT … SELECT` the rows across, drop the old
+table, rename, recreate the indexes. Both tables are small and the rebuild runs
+before either has meaningful volume.
+
+Until then the reference is enforced in application code only — the moderation
+actions write an authenticated `user.id` or nothing.
+
 ---
 
 ## 9. Business rules
@@ -1310,7 +1335,7 @@ Restore must be documented and tested once before go-live. An untested backup is
 
 **Phase 1 — Foundation.** Next.js + TypeScript + Tailwind v4, OpenNext Cloudflare adapter, Wrangler config, D1 created, KV namespace created and bound for the incremental cache, R2 bucket bound, Drizzle configured. No cron trigger yet. Deploy hello-world to the custom domain. *Verify deployment before writing features.*
 
-**Phase 2 — Public schema.** `reviews`, `enquiries`, `company_settings`. Migration applied.
+**Phase 2 — Public schema.** `reviews`, `enquiries`, `company_settings`. Migration applied. The two moderation foreign keys are deferred to Phase 8 — see §8, *Deferred constraints*.
 
 **Phase 3 — Shell.** Root layout, next-intl, both locale layouts with RTL, fonts, design tokens, header with brand hierarchy, footer with disclaimer.
 
@@ -1324,7 +1349,7 @@ Restore must be documented and tested once before go-live. An untested backup is
 
 ### Release 2 — Admin panel
 
-**Phase 8 — Auth.** Better Auth with D1, login, middleware guard, invite flow, users settings, seed first admin.
+**Phase 8 — Auth.** Better Auth with D1, login, middleware guard, invite flow, users settings, seed first admin. Also rebuilds `reviews` and `enquiries` to add the two moderation foreign keys deferred out of Phase 2 (§8, *Deferred constraints*).
 
 **Phase 9 — Foundations.** Lookup tables with seed data, company settings page, agencies CRUD.
 
