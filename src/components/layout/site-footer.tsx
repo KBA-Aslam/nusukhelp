@@ -156,9 +156,13 @@ function FooterColumn({
       <ul className="mt-4 space-y-0.5">
         {items.map((item) => (
           <li key={`${item.href}-${item.labelKey}`}>
+            {/* 44px, not 36px. The footer columns sat at `min-h-9` and were
+                caught by the 390px pass: §20 puts the tap-target floor at
+                44×44 and it applies to the footer nav as much as to the admin
+                panel — these are the links a pilgrim thumbs at on a phone. */}
             <Link
               href={item.href}
-              className="inline-flex min-h-9 items-center text-[0.8125rem] text-onink transition-colors hover:text-gilt"
+              className="inline-flex min-h-11 items-center text-[0.8125rem] text-onink transition-colors hover:text-gilt"
             >
               <Bidi>{t(item.labelKey)}</Bidi>
             </Link>

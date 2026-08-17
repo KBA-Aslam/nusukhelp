@@ -101,7 +101,9 @@ export function BrandLockup({ tone, label, eyebrow, href }: Props) {
     <Link
       href={href}
       aria-label={label}
-      className="flex items-center gap-4 rounded-[2px]"
+      // min-h-11 keeps the linked lockup on the 44px tap-target floor (§20).
+      // The shorter mark after the Phase 4c redraw left it at 40px.
+      className="flex min-h-11 items-center gap-4 rounded-[2px]"
     >
       {inner}
     </Link>
