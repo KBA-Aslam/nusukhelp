@@ -53,7 +53,12 @@ export function SiteFooter() {
               <Bidi>{t('footer.tagline')}</Bidi>
             </p>
 
-            <address className="mt-6 space-y-1.5 text-[0.8125rem] not-italic text-onink-muted">
+            {/* One block, not three lines with air between them (Phase 4c).
+                The 44px tap targets on the phone and email are kept as padding
+                on the links themselves rather than as gaps in the list, so the
+                address reads as a single unit while both links stay comfortably
+                tappable. The gap to the columns above is unchanged. */}
+            <address className="mt-6 text-[0.8125rem] leading-[1.55] not-italic text-onink-muted">
               <p>
                 <Bidi>{t('footer.location')}</Bidi>
               </p>
@@ -61,7 +66,7 @@ export function SiteFooter() {
                 <a
                   href={PHONE_HREF}
                   aria-label={t('footer.phoneLabel', { number: PHONE_DISPLAY })}
-                  className="inline-flex min-h-9 items-center transition-colors hover:text-gilt"
+                  className="inline-flex min-h-11 items-center transition-colors hover:text-gilt"
                 >
                   {/* The leading `+` is a bidi neutral. Unisolated on `/ar` it
                       resolves to the paragraph direction and renders at the
@@ -74,7 +79,7 @@ export function SiteFooter() {
                 <a
                   href={EMAIL_HREF}
                   aria-label={t('footer.emailLabel', { address: EMAIL })}
-                  className="inline-flex min-h-9 items-center transition-colors hover:text-gilt"
+                  className="inline-flex min-h-11 items-center transition-colors hover:text-gilt"
                 >
                   <Bidi>{EMAIL}</Bidi>
                 </a>
@@ -106,10 +111,10 @@ export function SiteFooter() {
         <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-12">
           <div className="flex items-center gap-3.5">
             <Image
-              src={LOGO.ahrOnDark}
+              src={LOGO.ahrOnDark.src}
               alt=""
-              width={336}
-              height={391}
+              width={LOGO.ahrOnDark.width}
+              height={LOGO.ahrOnDark.height}
               unoptimized
               className="h-9 w-auto opacity-90"
             />

@@ -489,9 +489,36 @@ ShareAlike; its two prohibitions (reselling unmodified images, building a
 competing stock service) do not apply here. **The client is sourcing the
 photograph themselves** — do not pick one.
 
-Until it lands the panel carries the Kufic lattice inside the arch mask rather
-than a flat fill, so it reads as intentional rather than unfinished. §19 item 6
-stays open; the lattice comes out when the photograph goes in.
+**Delivered in Phase 4c — §19 item 6 is closed.** The client supplied the
+courtyard umbrellas at Al Masjid an-Nabawi at night, 1024 × 1536 portrait.
+Cropped to 1024 × 1191 top-anchored so the umbrella fan's radial geometry sits
+under the arch apex; the 345px dropped from the bottom was the marble
+foreground, the weakest band in the frame. Served at 860 × 1000 WebP, 146 KB —
+twice the 430px panel, `unoptimized` per §17. The Kufic lattice placeholder is
+gone, as this section said it would be.
+
+**The tint is 0.60 `--ink`, and it is not doing what it was briefed to do.** The
+brief asked for a tint heavy enough to keep the heading and body at AA over the
+image. Measured over all 860,000 pixels of the actual crop:
+
+| Tint | White heading | `--onink` body | Mean luminance |
+|---|---|---|---|
+| 0.45 | 2.74 | 1.59 | 0.096 |
+| 0.55 | 3.66 | 2.13 | 0.074 |
+| **0.60** | **4.22** | **2.45** | **0.065** |
+| 0.65 | 4.95 | 2.88 | 0.056 |
+| 0.75 | 6.85 | 3.98 | 0.042 |
+
+**No text sits over this panel in either layout** — on `lg` it is a separate
+grid column, below `lg` it sits under the copy — so none of those ratios
+currently binds anything. 0.60 was chosen to seat the photograph in the ink
+band, not to rescue contrast.
+
+If text is ever moved over the image, the numbers say what it costs: white
+display type clears 4.5:1 at a tint of about 0.62, but `--onink` body type does
+not reach 4.5:1 until roughly 0.78 — by which point the mean luminance is 0.04
+and the photograph is effectively black. Body copy over this image means
+switching it to white, not tinting harder.
 
 **3. Geometric pattern — two permitted surfaces.** A tiling square-Kufic lattice
 derived from the grid in the Al Haramain mark — not a stock arabesque — at an
@@ -516,6 +543,33 @@ recorded in `components/ui/kufic-pattern.tsx`.
 **4. Coverage cards.** Each city card carries its icon plus a low-opacity ogee
 arch motif, so the four read as a set with individual identity rather than four
 identical boxes.
+
+### Phase 4c — brand assets
+
+**The mark lost its English wordmark.** The artwork was redrawn as the dome and
+its Arabic calligraphy alone (1770 × 1847, and 1763 × 1867 for the cream
+variant — both changed from the old 1835 × 2059). Two consequences, both
+handled:
+
+- Intrinsic dimensions now live on `LOGO` in `lib/site.ts`, not hard-coded in
+  the component. A stale pair reserves the wrong space and shifts the header as
+  the image decodes.
+- The lockup was retuned. With the wordmark gone the dome fills the whole box,
+  so at an unchanged height it rendered visibly larger and crowded the Latin
+  "NUSUK HELP" beside it. The box is a little shorter and the gap a little
+  wider, since the mark's own type is no longer there to do that spacing.
+
+`docs/prototype/logos/` and `public/logos/` are byte-identical — verified by
+checksum, not by eye. Keep them that way.
+
+**Favicons — the symbol only, on `--sand`.** A wordmark is a smudge at 16px, and
+the artwork no longer has one. `favicon.ico` packs 16/32/48 as PNG-in-ICO;
+`icon.png` (192) and `apple-icon.png` (180) use the App Router's file
+conventions; `manifest.webmanifest` comes from `app/manifest.ts` and carries
+192, 512 and a separate **maskable** 512 with a wider safe zone — Android crops
+maskable icons to the launcher's shape, usually a circle, and the dome's finial
+is the first thing lost. Filled backgrounds are `--sand`, never white: white
+against `--sand` reads visibly cold. The `any`-purpose icons stay transparent.
 
 > This reverses the Phase 4 ruling that removed the arch from the coverage
 > cards. **The arch is now a three-surface device** — hero mask, two-division
@@ -1634,7 +1688,7 @@ product if and only if the evidence says the hand-rolled path is not enough.
 | 3 | WhatsApp business number for public CTAs | Client | Go-live | Placeholder number, single constant |
 | 4 | Legal name, CR number, full address, bank details | Client | Go-live | Placeholder values in `company_settings` |
 | 5 | Arabic translation of all public copy | Client | Go-live | Real keys, English placeholder values |
-| 6 | Photography for landing and service sections | Client | Go-live | Solid colour blocks at the correct aspect ratios |
+| ~~6~~ | ~~Photography for landing and service sections~~ | Client | — | **Done in Phase 4c.** Hero image supplied and in place; see §7. Service-section photography, if any, still uses colour blocks at the correct ratio. |
 | 7 | Confirm hotel list for initial seed | Client | Go-live | A sample seed list |
 | 8 | Legal review of permit-assistance copy | Client | Go-live | The copy as drafted, per Appendix A |
 | 9 | Verify current ZATCA VAT registration threshold | Client | Future | n/a — see §9.9 |

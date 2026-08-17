@@ -211,6 +211,30 @@ export type B2bPillarId =
 
 export type B2bPillar = { readonly id: B2bPillarId };
 
+/* --------------------------------------------------------------------------
+   Contact audiences — §5 item 9
+
+   The contact section splits by audience: pilgrims to the WhatsApp
+   consultation, agencies to the B2B enquiry. The two cards were hard-coded
+   until Phase 4c; they are a list here so their ids can key glyphs the same way
+   every other card on the page does.
+
+   Message keys — `contact.<id>.title | body | cta`.
+   -------------------------------------------------------------------------- */
+
+export type ContactAudienceId = 'pilgrims' | 'agencies';
+
+export type ContactAudience = {
+  readonly id: ContactAudienceId;
+  /** Locale-less route, or `null` for the WhatsApp deep link built at render. */
+  readonly href: string | null;
+};
+
+export const CONTACT_AUDIENCES: readonly ContactAudience[] = [
+  { id: 'pilgrims', href: null },
+  { id: 'agencies', href: '/b2b' },
+] as const;
+
 export const B2B_PILLARS: readonly B2bPillar[] = [
   { id: 'wholesaleRates' },
   { id: 'groupReservations' },

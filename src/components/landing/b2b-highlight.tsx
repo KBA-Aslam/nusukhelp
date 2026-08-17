@@ -1,10 +1,11 @@
 import { useTranslations } from 'next-intl';
 
 import { Bidi } from '@/components/ui/bidi';
+import { BrandIcon } from '@/components/ui/brand-icons';
 import { B2B_PILLARS } from '@/content/services';
 
 import { ButtonLink } from './cta';
-import { LeadRule, Section, SectionHeading } from './section';
+import { Section, SectionHeading } from './section';
 
 /**
  * §5 item 7 — the B2B highlight. Six pillars and a *Become our partner* CTA.
@@ -50,7 +51,9 @@ export function B2bHighlight() {
             key={pillar.id}
             className="rounded-[2px] border border-hairline bg-white p-6 sm:p-7"
           >
-            <LeadRule tone="mist" width="w-8" />
+            <span className="block text-brass">
+              <BrandIcon name={pillar.id} />
+            </span>
             <h3 className="mt-4 text-[1.0625rem] font-semibold text-ink">
               <Bidi>{t(`pillars.${pillar.id}.title`)}</Bidi>
             </h3>

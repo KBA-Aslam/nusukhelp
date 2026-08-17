@@ -25,24 +25,41 @@ type Props = {
  * different component, which is the point.
  *
  * The marks are raster (§7, asset note): PNG inside the supplied SVG wrappers,
- * cleaned to transparency. They are rendered well below native size — 1835px
+ * cleaned to transparency. They are rendered well below native size — ~1770px
  * wide artwork drawn at 40–54px — so they stay crisp on 2x and 3x screens.
  * `unoptimized` keeps them out of the image pipeline entirely, which is not yet
  * configured for Workers; at this size the optimiser has nothing to win.
+ *
+ * ## Retuned in Phase 4c, when the English wordmark left the artwork
+ *
+ * The mark used to carry "NUSUK HELP" inside the image, under the dome. With
+ * that text gone the dome fills the whole box, so at an unchanged box height it
+ * renders visibly larger and crowds the Latin wordmark set beside it. Two
+ * adjustments, both optical rather than arbitrary:
+ *
+ *  - the box is a little shorter, so the *dome* stays about the size it was
+ *    when it shared the box with a line of type;
+ *  - the gap widens, because the mark's own type no longer sits between the
+ *    dome and the wordmark to do that spacing.
+ *
+ * The intrinsic dimensions come from `LOGO` — they changed with the redraw
+ * (1770×1847, not 1835×2059) and a stale pair reserves the wrong space and
+ * shifts the header as the image decodes.
  */
 export function BrandLockup({ tone, label, eyebrow, href }: Props) {
   const onDark = tone === 'dark';
+  const mark = onDark ? LOGO.nusukOnDark : LOGO.nusukOnLight;
 
   const inner = (
     <>
       <Image
-        src={onDark ? LOGO.nusukOnDark : LOGO.nusukOnLight}
+        src={mark.src}
         alt=""
-        width={1835}
-        height={2059}
+        width={mark.width}
+        height={mark.height}
         priority={!onDark}
         unoptimized
-        className={onDark ? 'h-[3.9rem] w-auto' : 'h-11 w-auto sm:h-[3.4rem]'}
+        className={onDark ? 'h-[3.4rem] w-auto' : 'h-10 w-auto sm:h-12'}
       />
       <span className="flex flex-col justify-center">
         <span
@@ -74,7 +91,7 @@ export function BrandLockup({ tone, label, eyebrow, href }: Props) {
 
   if (!href) {
     return (
-      <div className="flex items-center gap-3" aria-label={label}>
+      <div className="flex items-center gap-4" aria-label={label}>
         {inner}
       </div>
     );
@@ -84,7 +101,7 @@ export function BrandLockup({ tone, label, eyebrow, href }: Props) {
     <Link
       href={href}
       aria-label={label}
-      className="flex items-center gap-3 rounded-[2px]"
+      className="flex items-center gap-4 rounded-[2px]"
     >
       {inner}
     </Link>

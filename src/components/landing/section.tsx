@@ -134,27 +134,3 @@ export function SectionHeading({
     </div>
   );
 }
-
-/**
- * A short brass rule as a card's lead device.
- *
- * **Narrowed in Phase 4b.** It used to lead every card and point on this page,
- * standing in for the icons §5 asked for and the prototypes never drew. Now
- * that a glyph leads each service card, why-choose-us point and coverage card,
- * the rule above them read as leftover scaffolding and was removed. It survives
- * on the contact cards, which have no icon, and hairline rules go on doing
- * their other work — section dividers, the footer rule, card borders.
- *
- * Decorative, so it is never the only thing distinguishing one item from
- * another.
- */
-export function LeadRule({
-  tone,
-  width = 'w-14',
-}: {
-  tone: Tone;
-  width?: string;
-}) {
-  const colour = tone === 'ink' || tone === 'pine' ? 'bg-gilt' : 'bg-brass';
-  return <span aria-hidden="true" className={`block h-px ${width} ${colour}`} />;
-}

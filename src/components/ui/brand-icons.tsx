@@ -1,7 +1,7 @@
 /**
  * The brand icon set — drawn for this project, not imported.
  *
- * §7, texture amendment. Seventeen monoline glyphs on a 28-unit grid, sharing
+ * §7, texture amendment. Twenty-four monoline glyphs on a 28-unit grid, sharing
  * the two shapes the design language already owns:
  *
  *  - the **ogee curve** from the Nusuk Help dome — the hotel arch, the Madinah
@@ -9,7 +9,7 @@
  *  - the **square-Kufic right angle** from the Al Haramain mark — the stepped
  *    route, the interlocking B2B brackets, the Kaaba's belt, the permit seal.
  *
- * Rules that keep them a set rather than seventeen drawings:
+ * Rules that keep them a set rather than twenty-four drawings:
  *
  *  - One stroke weight throughout (1.4 at 28 units, ≈1.4px at the 28px render
  *    size). No fills, no two-tone, no rounded caps — the brand is angular.
@@ -24,6 +24,8 @@
  */
 
 import type {
+  B2bPillarId,
+  ContactAudienceId,
   CoverageAreaId,
   ServiceId,
   WhyChooseUsId,
@@ -60,7 +62,18 @@ function ogeePath(x: number, y: number, w: number, h: number): string {
  * in sync. If a glyph ever needs to be shared by two entries, that is the
  * moment to add the field.
  */
-export type BrandIconName = ServiceId | WhyChooseUsId | CoverageAreaId;
+export type BrandIconName =
+  | ServiceId
+  | WhyChooseUsId
+  | CoverageAreaId
+  | B2bPillarId
+  | ContactAudienceId;
+
+/*
+ * `groundHandling` is a member of both `ServiceId` and `B2bPillarId`. That is
+ * the union collapsing two ids that mean the same thing onto one glyph, which
+ * is correct — the service and the pillar describe the same capability.
+ */
 
 /** Every glyph's geometry, as children of a shared 0 0 28 28 viewBox. */
 const GLYPHS: Record<BrandIconName, React.ReactNode> = {
@@ -229,6 +242,76 @@ const GLYPHS: Record<BrandIconName, React.ReactNode> = {
       <path d="M14,3 L25,14 L14,25 L3,14 Z" />
       <path d="M9.5,18.5 L18.5,9.5" />
       <path d="M12,12 H16 V16 H12 Z" />
+    </>
+  ),
+
+  /* ---- B2B pillars ------------------------------------------------------- */
+
+  // A tag with a second outline behind it — one rate, many rooms.
+  wholesaleRates: (
+    <>
+      <path d="M3,16 L13,6 H20 V13 L10,23 Z" />
+      <path d="M16,4 H23 V11" />
+      <path d="M15.5,9.5 H18.5 V12.5 H15.5 Z" />
+    </>
+  ),
+
+  // Three arch-topped niches in a row — a block of rooms held together.
+  groupReservations: (
+    <>
+      <path d={ogeePath(3, 9, 7, 9)} />
+      <path d={ogeePath(10.5, 6, 7, 12)} />
+      <path d={ogeePath(18, 9, 7, 9)} />
+      <path d="M2,24 H26" />
+    </>
+  ),
+
+  // An office on the ground: a block with an ogee door.
+  localRepresentation: (
+    <>
+      <path d="M5,25 V7 H23 V25" />
+      <path d="M2,25 H26" />
+      <path d={ogeePath(11, 15, 6, 10)} />
+      <path d="M8,11 H11 M8,15 H11 M17,11 H20 M17,15 H20" />
+    </>
+  ),
+
+  // One named contact — a single figure, shoulders drawn on the ogee curve.
+  dedicatedAgent: (
+    <>
+      <circle cx="14" cy="9" r="4" />
+      <path d="M5,25 C5,18 9,15 14,15 C19,15 23,18 23,25" />
+    </>
+  ),
+
+  // The confidential invoice (§10): a document whose amount line is empty.
+  confidentialInvoicing: (
+    <>
+      <path d="M6,3 H22 V25 H6 Z" />
+      <path d="M9,9 H15 M9,13 H19" />
+      <path d="M9,18 H19 V22 H9 Z" />
+      <path d="M12,20 H16" />
+    </>
+  ),
+
+  /* ---- Contact audiences ------------------------------------------------- */
+
+  // A traveller beneath the arch.
+  pilgrims: (
+    <>
+      <path d={ogeePath(4, 3, 20, 22)} />
+      <circle cx="14" cy="12" r="2.6" />
+      <path d="M9.5,25 C9.5,20.5 11.5,18.5 14,18.5 C16.5,18.5 18.5,20.5 18.5,25" />
+    </>
+  ),
+
+  // The agency: a case with a Kufic clasp.
+  agencies: (
+    <>
+      <path d="M3,9 H25 V23 H3 Z" />
+      <path d="M10,9 V5 H18 V9" />
+      <path d="M12,14 H16 V18 H12 Z" />
+      <path d="M3,14 H12 M16,14 H25" />
     </>
   ),
 };

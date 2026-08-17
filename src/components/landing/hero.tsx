@@ -1,7 +1,8 @@
 import { useTranslations } from 'next-intl';
 
+import Image from 'next/image';
+
 import { Bidi } from '@/components/ui/bidi';
-import { KuficPattern } from '@/components/ui/kufic-pattern';
 import {
   HERO_PANEL_ASPECT,
   OgeeArchClipDefs,
@@ -23,11 +24,10 @@ import { CONTAINER } from './section';
  * so the other two stack below it rather than disappearing on a phone, which is
  * where most of this traffic actually is.
  *
- * The panel is a **solid colour block at the correct aspect ratio**, per §19's
- * placeholder rule: photography is open item 6, and a wrong-ratio placeholder
- * would hide the layout bugs a placeholder exists to expose. It is decorative
- * until then, so it carries no alt text — when the photograph lands it becomes
- * an `<Image>` and needs one.
+ * The panel now carries the photograph (§19 item 6, closed) behind the ogee
+ * mask. It is not decoration — it is the one image on the page and it names a
+ * real place — so it takes a described `alt` from the message catalogue rather
+ * than `alt=""`, and the description is translated with everything else.
  */
 export function Hero() {
   const t = useTranslations('home.hero');
@@ -96,21 +96,44 @@ export function Hero() {
           </ArrowLink>
         </div>
 
-        {/* Photography placeholder — §19 open item 6, still open.
-            The client is sourcing the photograph under the Unsplash licence
-            (§7). Until it lands the panel carries the Kufic lattice inside the
-            mask rather than a flat fill, so the arch reads as intentional
-            rather than unfinished. This is the third and temporary pattern
-            surface: it comes out when the image goes in, and no text sits over
-            it in either layout. */}
+        {/*
+          The photograph — §19 open item 6, closed. Masjid an-Nabawi's courtyard
+          umbrellas at night, supplied by the client under the Unsplash licence
+          (§7): commercial use, no attribution, no ShareAlike.
+
+          Cropped 1024×1191 from a 1024×1536 portrait source — top-anchored, so
+          the umbrella fan's radial geometry sits under the arch apex and the
+          weakest band (bottom marble foreground) is what gets dropped. Served
+          at 860×1000 WebP, 146 KB: twice the 430px panel, which is all the
+          resolution the panel can use.
+
+          `unoptimized` per §17 — the file is already sized and encoded for its
+          one job, and Cloudflare's image product is paid. The Kufic lattice
+          that stood in here is gone, as §7 said it would be when the image
+          landed.
+
+          The ink tint is 0.60. Note what it is *not* doing: no text sits over
+          this panel in either layout — on `lg` it is a separate grid column, and
+          below `lg` it sits under the copy — so the tint is there to seat the
+          photograph in the ink band, not to rescue contrast. The measured
+          numbers are in the Phase 4c note in §7.
+        */}
         <div
           className={`relative mx-auto w-full max-w-[17rem] sm:max-w-[21.5rem] lg:mx-0 lg:w-[26.875rem] ${HERO_PANEL_ASPECT}`}
         >
           <OgeeArchMask className="relative h-full w-full overflow-hidden bg-panel">
-            <KuficPattern
-              id="hero"
-              ink="var(--color-gilt)"
-              opacity={0.14}
+            <Image
+              src="/images/hero-madinah.webp"
+              alt={t('imageAlt')}
+              width={860}
+              height={1000}
+              priority
+              unoptimized
+              className="h-full w-full object-cover"
+            />
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 bg-ink opacity-60"
             />
           </OgeeArchMask>
           <OgeeArchPanelOutline className="absolute inset-0 h-full w-full" />

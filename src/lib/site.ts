@@ -117,13 +117,39 @@ export const FOOTER_COMPANY: readonly NavItem[] = [
    the division mark never appears in the public site header.
    -------------------------------------------------------------------------- */
 
+/**
+ * The marks, with their **intrinsic** pixel dimensions.
+ *
+ * The sizes live here because `next/image` needs the real aspect ratio to
+ * reserve space, and getting it wrong shifts the layout as the image loads.
+ * They were hard-coded in the component until the artwork was redrawn without
+ * the English wordmark and every number went stale at once — measured from the
+ * files now, in one place, so a future redraw is a one-line change here rather
+ * than a hunt through components.
+ */
 export const LOGO = {
   /** Parent mark, transparent — for the sand page ground. Header. */
-  nusukOnLight: '/logos/nusuk-help-logo.png',
+  nusukOnLight: {
+    src: '/logos/nusuk-help-logo.png',
+    width: 1770,
+    height: 1847,
+  },
   /** Parent mark, cream — for the ink bands. Footer. */
-  nusukOnDark: '/logos/nusuk-help-logo-light.png',
+  nusukOnDark: {
+    src: '/logos/nusuk-help-logo-light.png',
+    width: 1763,
+    height: 1867,
+  },
   /** Division mark, gold cutout — footer division line only, on this site. */
-  ahrOnDark: '/logos/ahr-logo-gold.png',
+  ahrOnDark: {
+    src: '/logos/ahr-logo-gold.png',
+    width: 336,
+    height: 391,
+  },
   /** Division mark on its green tile — reservation page body, admin, invoice. */
-  ahrTile: '/logos/ahr-logo-tile.png',
+  ahrTile: {
+    src: '/logos/ahr-logo-tile.png',
+    width: 469,
+    height: 463,
+  },
 } as const;
