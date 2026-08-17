@@ -90,11 +90,17 @@ export function BrandLockup({ tone, label, eyebrow, href }: Props) {
   );
 
   if (!href) {
-    return (
-      <div className="flex items-center gap-4" aria-label={label}>
-        {inner}
-      </div>
-    );
+    /*
+     * No `aria-label` on this branch. A plain `<div>` maps to the `generic`
+     * role, which ARIA does not allow to be labelled — support is inconsistent
+     * and, where it works, the label duplicates the "NUSUK HELP" wordmark that
+     * is already rendered as text inside. The unlinked lockup is the footer's,
+     * and the footer already names the company in its own landmark label.
+     *
+     * The linked branch below keeps its label: that one is a link, the label is
+     * its accessible name ("Nusuk Help — home"), and a link needs one.
+     */
+    return <div className="flex items-center gap-4">{inner}</div>;
   }
 
   return (

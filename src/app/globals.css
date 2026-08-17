@@ -30,22 +30,39 @@
      for hairlines and secondary text, pulled out of the SVGs so they are
      named in one place instead of hard-coded per component. */
   --color-hairline: #d6dfda; /* 1px card and divider strokes on light   */
-  --color-muted: #8a968f; /* secondary label text on light           */
-  --color-placeholder: #9aa8a2; /* input placeholder text                  */
+  --color-muted: #5f6c66; /* secondary label text on light — see below */
+  --color-placeholder: #69776f; /* input placeholder text  — see below     */
   --color-onink: #b9c9c2; /* body text on ink   — 9.0:1 contrast     */
   --color-onink-muted: #8fa69d; /* muted text on ink  — 6.0:1 contrast     */
   --color-panel: #123a30; /* raised panel fill on ink                */
   --color-panel-deep: #0a342b; /* card fill on ink                        */
 
-  /* --- Accessibility correction ----------------------------------------
+  /* --- Accessibility corrections ---------------------------------------
      `--color-brass` is 2.9:1 against `--color-sand`, which is fine for the
      hairline rules and decorative strokes it was measured from, but fails
      WCAG AA for the tracked-capital eyebrows the prototype also sets in it.
      The §7 quality floor requires AA, so text-on-light uses this darkened
-     brass (4.7:1) while `--color-brass` keeps its role for rules, borders
-     and ornament. `--color-gilt` on `--color-ink` is 7.8:1 and needs no
-     equivalent. See the note raised against §7 in the Phase 3 handover. */
-  --color-brass-ink: #8a6a38;
+     brass while `--color-brass` keeps its role for rules, borders and
+     ornament. `--color-gilt` on `--color-ink` is 7.8:1 and needs no
+     equivalent. See the note raised against §7 in the Phase 3 handover.
+
+     **Re-measured in Phase 7, against every ground it actually lands on.**
+     The Phase 3 correction was measured on sand alone, and the eyebrow also
+     sets on `--color-mist`, which is darker: the old #8a6a38 was 4.68:1 on
+     sand but **4.27:1 on mist**, so half the eyebrows on the site were below
+     AA and the token that existed to fix the problem was carrying it. The
+     value below clears AA on all three light grounds — 5.10:1 on sand,
+     4.65:1 on mist, 5.53:1 on white. It is the same hue, one step darker.
+
+     `--color-muted` and `--color-placeholder` were re-measured in the same
+     pass and moved for the same reason. The prototype's #8a968f is 2.87:1 on
+     sand — it was carrying the "last updated" line on both legal pages, which
+     is small text, and it is the token the admin panel's secondary labels
+     would have inherited in Phase 9. #9aa8a2 for placeholders was 2.6:1 on
+     white, and a placeholder is text: it lands in Phase 6's forms and would
+     have shipped failing. Both are now ≥4.5:1 on sand, mist and white, at
+     their original hues. */
+  --color-brass-ink: #846434;
 
   /* --- Type -------------------------------------------------------------
      Marcellus is display only: headings, never body or UI. The Arabic stack

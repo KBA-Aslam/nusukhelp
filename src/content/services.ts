@@ -276,3 +276,16 @@ export const COVERAGE_AREAS: readonly CoverageArea[] = [
   { id: 'jeddah', headOffice: false },
   { id: 'elsewhere', headOffice: false },
 ] as const;
+
+/**
+ * The coverage entries that name an actual place, for `areaServed` in the
+ * landing page's structured data (§17).
+ *
+ * `elsewhere` is the "anywhere else in the Kingdom" tile, as the note above
+ * says — a `Place` named "Elsewhere" is not a statement about geography, it is
+ * a broken one. The exclusion lives here, beside the fact that motivates it,
+ * rather than as an id check inside `lib/structured-data.ts`.
+ */
+export const COVERAGE_PLACES: readonly CoverageArea[] = COVERAGE_AREAS.filter(
+  (area) => area.id !== 'elsewhere',
+);

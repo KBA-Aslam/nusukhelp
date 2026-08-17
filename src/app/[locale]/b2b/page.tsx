@@ -12,6 +12,7 @@ import { Section, SectionHeading } from '@/components/ui/section';
 import { B2B_STEPS } from '@/content/pages';
 import { B2B_PILLARS, RESERVATION_SERVICES } from '@/content/services';
 import { Link } from '@/i18n/navigation';
+import { pageMetadata } from '@/lib/metadata';
 import { whatsappUrl } from '@/lib/site';
 
 /**
@@ -52,7 +53,12 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'b2b.meta' });
 
-  return { title: t('title'), description: t('description') };
+  return pageMetadata({
+    locale,
+    path: '/b2b',
+    title: t('title'),
+    description: t('description'),
+  });
 }
 
 export default async function B2bPage({

@@ -30,6 +30,19 @@ const eslintConfig = [
       "@typescript-eslint/no-explicit-any": "error",
     },
   },
+  {
+    /*
+     * `scripts/` holds one-off Node tooling that never reaches the bundle —
+     * `generate-og-image.js` builds the Open Graph card and is run by hand. It
+     * is plain CommonJS on purpose: `node scripts/…` with no build step, no
+     * loader flag, and no `"type": "module"` argument with the Next config.
+     * The app's own no-`require` rule is right for `src/` and inapplicable here.
+     */
+    files: ["scripts/**/*.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
 ];
 
 export default eslintConfig;

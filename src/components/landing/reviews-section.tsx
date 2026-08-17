@@ -91,10 +91,18 @@ export function ReviewsSection({ reviews }: { reviews: PublicReview[] }) {
  *
  * The glyphs are decoration — the rating is announced once, from the label —
  * otherwise a screen reader reads "black star" five times per review.
+ *
+ * The label is **visually hidden text, not `aria-label`**. ARIA's own rules
+ * only permit a label on elements with a semantic role, and a `<p>` maps to
+ * `generic`: some screen readers announce an `aria-label` there, others drop
+ * it silently, and the ones that drop it leave the rating unannounced
+ * altogether because the glyphs beside it are hidden. `sr-only` text is read by
+ * every one of them, and it is translated the same way.
  */
 function Stars({ rating, label }: { rating: number; label: string }) {
   return (
-    <p className="text-sm tracking-[0.18em]" aria-label={label}>
+    <p className="text-sm tracking-[0.18em]">
+      <span className="sr-only">{label}</span>
       <span aria-hidden="true">
         {[1, 2, 3, 4, 5].map((position) => (
           <span

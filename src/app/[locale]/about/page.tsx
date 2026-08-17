@@ -11,6 +11,7 @@ import { Bidi } from '@/components/ui/bidi';
 import { ButtonLink } from '@/components/ui/cta';
 import { Section, SectionHeading } from '@/components/ui/section';
 import { ABOUT_FACTS } from '@/content/pages';
+import { pageMetadata } from '@/lib/metadata';
 import { whatsappUrl } from '@/lib/site';
 
 /**
@@ -51,7 +52,12 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'about.meta' });
 
-  return { title: t('title'), description: t('description') };
+  return pageMetadata({
+    locale,
+    path: '/about',
+    title: t('title'),
+    description: t('description'),
+  });
 }
 
 export default async function AboutPage({

@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { LegalArticle } from '@/components/pages/legal-article';
 import { PRIVACY_SECTIONS } from '@/content/legal';
+import { pageMetadata } from '@/lib/metadata';
 
 /**
  * `/privacy` (§4, *Legal*).
@@ -30,7 +31,12 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'privacy.meta' });
 
-  return { title: t('title'), description: t('description') };
+  return pageMetadata({
+    locale,
+    path: '/privacy',
+    title: t('title'),
+    description: t('description'),
+  });
 }
 
 export default async function PrivacyPage({

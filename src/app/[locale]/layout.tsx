@@ -54,9 +54,32 @@ export async function generateMetadata({
       template: t('titleTemplate', { page: '%s' }),
     },
     description: t('defaultDescription'),
-    // Per-page canonicals, `hreflang` alternates, Open Graph and JSON-LD are
-    // Phase 7 (§17). Setting partial alternates here would emit them for every
-    // page pointing at the locale root, which is worse than not having them.
+
+    /*
+     * What is *not* here, and why.
+     *
+     * Canonicals, `hreflang` alternates, Open Graph and Twitter cards are all
+     * per-URL, and Next merges layout metadata into page metadata **shallowly**
+     * — a page setting `openGraph` replaces this one's entirely rather than
+     * extending it. Partial values here would therefore either be dropped
+     * without warning or, worse, survive on a page that forgot to override
+     * them, pointing every canonical at the locale root. So every page builds
+     * the complete set through `pageMetadata` in `lib/metadata.ts`, and this
+     * layout carries only what is genuinely global.
+     */
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        // Lets Google show the Open Graph card at full size and quote enough
+        // of a page to be useful. Without it the preview is capped at a
+        // thumbnail, which is the default for a site that says nothing.
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
   };
 }
 
@@ -99,7 +122,13 @@ export default async function LocaleLayout({
         <NextIntlClientProvider>
           <SkipLink />
           <SiteHeader />
-          <main id="main" className="flex-1">
+          {/* `tabIndex={-1}` is what makes the skip link work rather than
+              merely scroll. Following a fragment moves the browser's *scroll*
+              to the target, but focus only follows if the target can hold it —
+              without this, a keyboard user activates "Skip to content", the
+              page scrolls, and the next Tab continues from the header link they
+              were trying to escape. */}
+          <main id="main" tabIndex={-1} className="flex-1">
             {children}
           </main>
           <SiteFooter />

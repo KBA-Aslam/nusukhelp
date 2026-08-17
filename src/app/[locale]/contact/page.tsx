@@ -9,6 +9,7 @@ import { BrandIcon } from '@/components/ui/brand-icons';
 import { ButtonLink } from '@/components/ui/cta';
 import { Section, SectionHeading } from '@/components/ui/section';
 import { CONTACT_AUDIENCES } from '@/content/services';
+import { pageMetadata } from '@/lib/metadata';
 import { CONTACT_CHANNELS, whatsappUrl } from '@/lib/site';
 
 /**
@@ -44,7 +45,12 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'contact.page.meta' });
 
-  return { title: t('title'), description: t('description') };
+  return pageMetadata({
+    locale,
+    path: '/contact',
+    title: t('title'),
+    description: t('description'),
+  });
 }
 
 export default async function ContactPage({

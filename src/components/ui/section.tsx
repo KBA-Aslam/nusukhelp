@@ -84,6 +84,16 @@ export function Section({
     <section
       id={id}
       aria-labelledby={labelledBy}
+      /*
+       * A section with an `id` is a jump-list target — the six anchors on
+       * `/al-haramain-reservation` (§4). Following a fragment scrolls the page,
+       * but focus only follows if the target can hold it, so without this a
+       * keyboard user activating "Permits" lands looking at the permits section
+       * with their focus still in the jump list, and the next Tab walks the
+       * remaining anchors instead of the section they asked for. The same fix
+       * as the skip link's `<main tabIndex={-1}>`.
+       */
+      tabIndex={id ? -1 : undefined}
       className={`relative isolate overflow-hidden ${GROUND[tone]} ${className}`}
     >
       {backdrop}

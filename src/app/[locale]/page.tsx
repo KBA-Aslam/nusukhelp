@@ -1,4 +1,6 @@
-import { setRequestLocale } from 'next-intl/server';
+import type { Metadata } from 'next';
+
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { B2bHighlight } from '@/components/landing/b2b-highlight';
 import { ContactSplit } from '@/components/landing/contact-split';
@@ -9,7 +11,14 @@ import { ReviewsSection } from '@/components/landing/reviews-section';
 import { ServicesGrid } from '@/components/landing/services-grid';
 import { TwoDivisions } from '@/components/landing/two-divisions';
 import { WhyChooseUs } from '@/components/landing/why-choose-us';
-import { getPublishedReviews } from '@/db/queries/reviews';
+import { JsonLd } from '@/components/seo/json-ld';
+import { COVERAGE_PLACES } from '@/content/services';
+import {
+  getPublishedReviews,
+  getPublishedReviewSummary,
+} from '@/db/queries/reviews';
+import { pageMetadata } from '@/lib/metadata';
+import { jsonLdDocument, travelAgencySchema } from '@/lib/structured-data';
 
 /** How many reviews the landing band shows. The full list is `/reviews`. */
 const LANDING_REVIEW_COUNT = 3;
@@ -34,6 +43,28 @@ const LANDING_REVIEW_COUNT = 3;
  * *before* redeploying, because a deploy re-prerenders from local D1.
  */
 export const revalidate = 3600;
+
+/**
+ * The landing page's title is the site's own — `meta.defaultTitle` already ends
+ * in the brand name, so it is passed as an untemplated title rather than run
+ * through ` · Nusuk Help` a second time. Every other page templates.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'meta' });
+
+  return pageMetadata({
+    locale,
+    path: '/',
+    title: t('defaultTitle'),
+    description: t('defaultDescription'),
+    untemplatedTitle: true,
+  });
+}
 
 /**
  * Landing page — the complete story, in the order §5 sets it.
@@ -62,10 +93,34 @@ export default async function HomePage({
   // translation, and the whole route falls out of the static build.
   setRequestLocale(locale);
 
-  const reviews = await getPublishedReviews(LANDING_REVIEW_COUNT);
+  const [reviews, reviewSummary] = await Promise.all([
+    getPublishedReviews(LANDING_REVIEW_COUNT),
+    // Over *every* published review, not over the three above — see the query.
+    getPublishedReviewSummary(),
+  ]);
+
+  const t = await getTranslations({ locale, namespace: 'meta' });
+  const tCoverage = await getTranslations({ locale, namespace: 'coverage' });
 
   return (
     <>
+      {/* §17 — `TravelAgency` on the landing page, with `AggregateRating`
+          attached only once a review has actually been published. The name and
+          description are the same strings the page and its metadata use. */}
+      <JsonLd
+        data={jsonLdDocument([
+          travelAgencySchema({
+            locale,
+            name: t('siteName'),
+            description: t('defaultDescription'),
+            areaServed: COVERAGE_PLACES.map((area) =>
+              tCoverage(`areas.${area.id}.name`),
+            ),
+            reviews: reviewSummary,
+          }),
+        ])}
+      />
+
       <Hero />
       <TwoDivisions />
       <FreeConsultation />

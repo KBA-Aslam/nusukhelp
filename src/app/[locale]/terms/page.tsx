@@ -5,6 +5,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { LegalArticle } from '@/components/pages/legal-article';
 import { Bidi } from '@/components/ui/bidi';
 import { TERMS_SECTIONS } from '@/content/legal';
+import { pageMetadata } from '@/lib/metadata';
 
 /**
  * `/terms` (§4, *Legal*).
@@ -40,7 +41,12 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'terms.meta' });
 
-  return { title: t('title'), description: t('description') };
+  return pageMetadata({
+    locale,
+    path: '/terms',
+    title: t('title'),
+    description: t('description'),
+  });
 }
 
 export default async function TermsPage({

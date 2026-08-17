@@ -5,6 +5,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { ClosingCta } from '@/components/pages/closing-cta';
 import { PageHeader } from '@/components/pages/page-header';
+import { JsonLd } from '@/components/seo/json-ld';
 import { Bidi } from '@/components/ui/bidi';
 import { BrandIcon } from '@/components/ui/brand-icons';
 import { ArrowLink, ButtonLink } from '@/components/ui/cta';
@@ -13,7 +14,16 @@ import {
   RESERVATION_SECTIONS,
   type ReservationSection,
 } from '@/content/reservation';
+import { pageMetadata } from '@/lib/metadata';
 import { LOGO, whatsappUrl } from '@/lib/site';
+import {
+  jsonLdDocument,
+  organisationReference,
+  serviceSchema,
+} from '@/lib/structured-data';
+
+/** This page's locale-less path — used by its metadata and its `Service` ids. */
+const PATH = '/al-haramain-reservation';
 
 /**
  * `/al-haramain-reservation` — full depth on all six reservation services, one
@@ -63,7 +73,12 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'reservation.meta' });
 
-  return { title: t('title'), description: t('description') };
+  return pageMetadata({
+    locale,
+    path: PATH,
+    title: t('title'),
+    description: t('description'),
+  });
 }
 
 export default async function ReservationPage({
@@ -80,6 +95,8 @@ export default async function ReservationPage({
 
   return (
     <>
+      <ReservationServicesJsonLd locale={locale} />
+
       <ReservationHeader />
       <AnchorNav />
 
@@ -96,6 +113,38 @@ export default async function ReservationPage({
 
       <ReservationClose />
     </>
+  );
+}
+
+/**
+ * §17 — one `Service` node per anchored section.
+ *
+ * The names and descriptions are the strings the sections themselves render:
+ * `services.items.<id>.title` and `reservation.sections.<id>.lead`. A crawler
+ * therefore reads exactly what a person reads, in whichever locale it asked
+ * for, and a copy edit updates both at once.
+ *
+ * The organisation is included by reference only — identity, no description.
+ * The full node belongs to the landing page; see `structured-data.ts`.
+ */
+function ReservationServicesJsonLd({ locale }: { locale: string }) {
+  const t = useTranslations();
+
+  return (
+    <JsonLd
+      data={jsonLdDocument([
+        organisationReference({ locale, name: t('meta.siteName') }),
+        ...RESERVATION_SECTIONS.map((section) =>
+          serviceSchema({
+            locale,
+            path: PATH,
+            anchor: section.anchor,
+            name: t(`services.items.${section.id}.title`),
+            description: t(`reservation.sections.${section.id}.lead`),
+          }),
+        ),
+      ])}
+    />
   );
 }
 

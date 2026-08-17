@@ -1587,6 +1587,81 @@ WhatsApp converts far better in this market; the form is a fallback and a record
 | Client bundles | No credentials or admin logic shipped to public routes |
 | Audit log | Append-only; no UI path to edit or delete |
 
+### Phase 7 — headers, as built and verified
+
+Set in `next.config.ts` for documents and `public/_headers` for static assets,
+and **confirmed with `curl` against the deployed site**, not inferred: CSP,
+HSTS, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy` and
+`Permissions-Policy` are present on HTML responses *including on an edge-cache
+HIT*, and `nosniff` plus HSTS are present on `/_next/static/*` and `/og/*`.
+`X-Robots-Tag: noindex, nofollow` is live on `/admin/*` ahead of the route tree
+existing.
+
+Two headers need the split explained. Next's `headers()` cannot reach static
+assets at all — Cloudflare's asset layer answers those before the Worker is
+invoked, which is what makes them free — so `public/_headers` carries the two
+that mean something on a subresource. CSP and `X-Frame-Options` govern
+documents, not the images a document pulls in, and are not repeated there.
+
+**CSP carries `script-src 'unsafe-inline'`, deliberately.** The App Router
+inlines the RSC payload as `self.__next_f.push(...)`, whose content changes per
+page and per build. Hashes are unmaintainable; a nonce must be unique per
+response, which means rendering every public page per request and giving up the
+edge cache that §17 is built on. What remains is narrower than the directive's
+name suggests: `script-src 'self'` still blocks off-origin script and `eval`,
+and the site renders no user-supplied HTML — React escapes every string, and the
+JSON-LD block escapes `<` explicitly. **Phase 8 must not inherit this
+reasoning.** `/admin/*` is authenticated and rendered per request, so it can
+carry a nonce cheaply and should; that is where a stored-XSS bug would cost
+something. **Phase 6 must add `challenges.cloudflare.com` to `script-src` and
+`frame-src`** for Turnstile — deliberately absent until something loads from it.
+
+**HSTS is `max-age=63072000; includeSubDomains`, with no `preload`.**
+Submitting to the browser preload list is close to irreversible and would bind
+every future subdomain of `nusukhelp.com` to HTTPS, including one the client
+might stand up on a service that does not do TLS. That is the client's call to
+make knowingly, not something to ship inside a launch commit. It is on the
+go-live checklist.
+
+### Phase 7 — the contrast tokens were re-measured, and two failed
+
+§7's quality floor requires WCAG AA. Phase 3 added `--color-brass-ink` because
+`--color-brass` is 2.9:1 on sand and fails it for the tracked-capital eyebrows,
+and recorded the replacement at 4.68:1. **That number was correct and is still
+correct — it was simply measured against one ground.** The eyebrow also sets on
+`--color-mist`, which is darker, and there it was **4.27:1: below AA.** So the
+token introduced to fix the contrast bug was carrying it on every mist band,
+which is roughly half the sections on the site. `--color-brass-ink` is now
+`#846434` — same hue, one step darker, 5.10:1 on sand, 4.65:1 on mist, 5.53:1 on
+white.
+
+Two more failed in the same sweep. `--color-muted` (`#8a968f`, from the
+prototype) was **2.87:1 on sand**, and it was setting the "last updated" line on
+both legal pages; it is now `#5f6c66`. `--color-placeholder` (`#9aa8a2`) was
+**2.6:1 on white** — a placeholder is text, and it would have shipped failing in
+Phase 6's forms; it is now `#69776f`. Both clear 4.5:1 on sand, mist and white
+at their original hues.
+
+**The lesson is about method, not about the numbers.** A colour token is not a
+pair, it is a token against every ground it renders on, and a single-ground
+measurement cannot establish AA for a token the design system deliberately
+reuses across grounds. Every text token on the site has now been measured
+against every ground it can land on — the full matrix is in the Phase 7 report.
+Re-run that matrix, not a spot check, whenever a token or a ground changes.
+
+### Phase 7 — accessibility fixes
+
+Four, all structural rather than cosmetic. `<main>` and any `<Section>` with an
+`id` take `tabIndex={-1}`: following a fragment scrolls the page but moves focus
+only if the target can hold it, so without it "Skip to content" and the six
+reservation anchors scrolled the page and left focus behind in the navigation.
+The star rating moved from `aria-label` on a `<p>` to visually hidden text —
+ARIA does not permit labelling a `generic` role, support is inconsistent, and
+where it is dropped the rating went unannounced entirely because the glyphs
+beside it are `aria-hidden`. The unlinked brand lockup lost its `aria-label` for
+the same reason; the linked one keeps it, because a link needs an accessible
+name.
+
 ---
 
 ## 16. Backups
@@ -1646,6 +1721,65 @@ plan, where an upgrade may be recommended only above a measured threshold and
 only with the numbers. Serve correctly sized WebP by hand first; reach for the
 product if and only if the evidence says the hand-rolled path is not enough.
 
+### Phase 7 rulings
+
+Everything in the list above is built and verified against the deployed site.
+Five decisions were made along the way that are not obvious from the code.
+
+**1. One source of `hreflang`, and it is the page head.** next-intl's middleware
+emits alternates as a `Link` response header by default, and it was doing so —
+producing a second set that disagreed with the head's in two ways. Its
+`x-default` pointed at the unprefixed root while the head's points at `/en`, and
+it is generated mechanically from whatever path was requested, so it advertised
+`en`/`ar` alternates for URLs that do not exist. `alternateLinks: false` is now
+set in `src/i18n/routing.ts`. The head and `sitemap.xml` are the only two
+emitters, and they agree because both are built from `localeUrl` in
+`src/lib/metadata.ts`.
+
+**2. The sitemap has its own route list, and `/reviews` is not in it.**
+`src/lib/public-routes.ts`. Deriving it from `PRIMARY_NAV` would have submitted
+`/reviews` — a route Phase 6 builds — to Google as a 404; deriving it from the
+footer would have listed `/b2b` four times. Navigation answers "where can a
+reader go from here" and a sitemap answers "which documents exist"; those only
+look like the same list. **Add `/reviews` in Phase 6, in the commit that builds
+the page.**
+
+**3. No `lastModified` in the sitemap.** The honest value is the last edit to a
+page's copy and nothing in the repo tracks that per route. A build timestamp
+would tell Google every page changed on every deploy, which teaches a crawler to
+stop believing the file.
+
+**4. Structured data states nothing the client has not supplied.** Google's
+rich-result guidance rewards `address`, `priceRange` and `openingHours` on a
+`LocalBusiness`, and all three are §19 open item 4 or worse — this company
+quotes per booking, so a price band would be fiction. A missing property costs
+an enhancement; a wrong one is a false statement about a business in a
+machine-readable form that is harder to retract than a line of copy. They land
+when item 4 does. `AggregateRating` is attached only when at least one review is
+actually published, from a dedicated aggregate query over **all** published
+reviews rather than a reduction over the three the landing band renders.
+
+**5. Cloudflare prepends a managed `robots.txt` to ours, and it is left on.**
+The zone has Cloudflare's managed `robots.txt` enabled, so the file served at
+`/robots.txt` is Cloudflare's AI-crawler block (a `Content-Signal` line and
+`Disallow: /` for Amazonbot, GPTBot, ClaudeBot, Google-Extended and others)
+followed by ours. `User-agent: *` therefore appears twice. **This does not
+weaken the `/admin` disallow**: RFC 9309 requires that "the matching groups'
+rules MUST be combined into one group", and within the combined group the most
+specific match wins — `Disallow: /admin` is 6 octets against `Allow: /`'s 1, so
+`/admin/*` stays disallowed. The toggle is Cloudflare dashboard → Security
+Settings → filter by Bot traffic → *"Set your preference to block training in
+robots.txt"*. **Nothing was changed** — whether to let AI crawlers train on this
+site is the client's decision, not a build one. §19 open item 14.
+
+**6. The Open Graph card is a committed static asset**, generated by
+`scripts/generate-og-image.js` and not by `next/og` at request time — a WASM
+renderer inside an 8 ms CPU budget (§2), for an image that changes only when the
+brand does. One card serves both locales: the mark and the "NUSUK HELP" wordmark
+are Latin islands in both, and the single English descriptor line is consistent
+with the rest of `/ar` while §19 item 5 is open. **An Arabic card is a second run
+of that script once the translation lands.**
+
 ---
 
 ## 18. Build order
@@ -1664,9 +1798,9 @@ product if and only if the evidence says the hand-rolled path is not enough.
 
 **Phase 5 — Detail pages.** `/al-haramain-reservation` with six anchors, `/b2b`, `/about`, `/contact`, legal.
 
-**Phase 6 — Forms.** Turnstile, reviews API, enquiries API with audience split, notification email, WhatsApp CTAs.
+**Phase 6 — Forms.** Turnstile, reviews API, enquiries API with audience split, notification email, WhatsApp CTAs. **Not built — Phase 7 shipped ahead of it (§19 item 13).** Three things from Phase 7 land here as well: the `/reviews` route, `/reviews` added to `PUBLIC_ROUTES` in `src/lib/public-routes.ts` so it enters the sitemap, and `challenges.cloudflare.com` added to `script-src` and `frame-src` in the CSP.
 
-**Phase 7 — Launch prep.** SEO metadata, sitemap, JSON-LD, security headers, Lighthouse, accessibility, RTL QA. **→ Go live.**
+**Phase 7 — Launch prep.** SEO metadata, sitemap, JSON-LD, security headers, Lighthouse, accessibility, RTL QA. **Built and deployed, tagged `phase-7-seo`.** Not `v1.0-public` and **not go-live**: Phase 6 is unbuilt, so the public release is incomplete and the navigation carries two links to a route that does not exist yet. Go-live is Phase 6 plus the open items marked *Go-live* in §19.
 
 ### Release 2 — Admin panel
 
@@ -1708,6 +1842,10 @@ product if and only if the evidence says the hand-rolled path is not enough.
 | 10 | Enable R2 on the Cloudflare account (needs a payment method on file, free 10 GB tier) | Client | **Phase 16** | Nothing — the `BACKUPS` binding stays commented out in `wrangler.jsonc` until then |
 | ~~11~~ | ~~Delete the registrar's parked `A` records on the `nusukhelp.com` apex in Cloudflare DNS~~ | Client | — | **Done in Phase 1.** Records deleted, both custom domains attached and serving over HTTPS. See §3. |
 | 12 | Legal review of `/privacy` and `/terms` | Client | Go-live | The drafts written in Phase 5 — starting points, not finished documents |
+| 13 | **Phase 6 is unbuilt** — no forms, no Turnstile, no `/reviews` route. `PRIMARY_NAV` and the landing reviews CTA both link to it, so the live site has two links to a 404 | Build | **Go-live** | Nothing — the links stay, and resolve when Phase 6 ships |
+| 14 | Decide on Cloudflare's managed `robots.txt` — it prepends an AI-crawler block ahead of ours (see §17 below) | Client | Go-live | The combined file as served today; our `/admin` disallow is effective either way |
+| 15 | Decide on HSTS `preload` — a near-irreversible commitment for every future subdomain (§15) | Client | Go-live | `max-age=63072000; includeSubDomains`, no `preload` |
+| 16 | Turn `workers_dev` off in `wrangler.jsonc` — a second reachable hostname is duplicate content (§17). Deferred past Phase 7 deliberately: the preview URL is how each phase is verified over HTTPS, and canonicals mitigate it meanwhile | Build | Go-live, **after Phase 6** | `workers_dev: true` |
 
 Item 1 now covers two things, and they go to the advisor **together**. The
 affiliation disclaimer is a legal statement, not marketing copy, and it is the

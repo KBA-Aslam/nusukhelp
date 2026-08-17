@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { avg, count, desc, eq } from 'drizzle-orm';
 
 import { getDbForRender } from '../index';
 import { reviews } from '../schema';
@@ -53,4 +53,44 @@ export async function getPublishedReviews(
     .where(eq(reviews.status, 'published'))
     .orderBy(desc(reviews.createdAt))
     .limit(limit);
+}
+
+/**
+ * The published reviews as an aggregate, for `AggregateRating` (§17).
+ *
+ * A **separate query, not a reduction over the rows** the landing band renders:
+ * that list is capped at three and the rating a search result quotes has to be
+ * over every published review, not over the newest three. Reducing the page's
+ * array would have produced a plausible-looking number that was quietly wrong.
+ *
+ * Nothing here can leak an address — the select names two aggregates and no
+ * columns — which is the same guarantee `PublicReview` gives structurally.
+ * §14.1: an email is never rendered publicly, "not in HTML, not in JSON, not in
+ * structured data".
+ *
+ * `null` when nothing is published, so the caller omits `aggregateRating`
+ * rather than emitting one with a zero count, which is invalid.
+ */
+export type ReviewSummary = {
+  count: number;
+  /** Mean rating, rounded to one decimal place. */
+  average: number;
+};
+
+export async function getPublishedReviewSummary(): Promise<ReviewSummary | null> {
+  const db = await getDbForRender();
+  if (!db) return null;
+
+  const [row] = await db
+    .select({ total: count(), average: avg(reviews.rating) })
+    .from(reviews)
+    .where(eq(reviews.status, 'published'));
+
+  if (!row || row.total === 0) return null;
+
+  // D1 returns SQLite's AVG as a string through Drizzle's `avg`.
+  const average = Number(row.average ?? 0);
+  if (!Number.isFinite(average) || average <= 0) return null;
+
+  return { count: row.total, average: Math.round(average * 10) / 10 };
 }

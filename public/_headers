@@ -1,0 +1,21 @@
+# Headers for the files Cloudflare's static-asset layer serves directly —
+# /_next/static/*, /images/*, /logos/*, /og/* (§15).
+#
+# Next's `headers()` in next.config.ts cannot reach these. Static assets are
+# answered before the Worker is invoked, which is what keeps them free and
+# fast, so the Worker never sees the request and never gets to attach a header
+# to the response.
+#
+# Only the two headers that mean something on a subresource are set here.
+# Content-Security-Policy and X-Frame-Options govern documents, not the images
+# and stylesheets a document pulls in, and repeating them on every asset would
+# be noise. `nosniff` stops a browser content-sniffing an asset into a type it
+# was not served as; HSTS is per-host rather than per-response, so setting it
+# here as well as on the document closes the case where an asset is the first
+# thing a client fetches over the bare hostname.
+#
+# Wrangler consumes this file at deploy time and does not serve it.
+
+/*
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
