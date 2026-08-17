@@ -247,6 +247,55 @@ In order:
 
 Footer: Services / B2B / Company columns, division line, affiliation disclaimer.
 
+### Phase 4 rulings — where the build departs from the prototypes
+
+All nine sections above are built. The prototypes draw **eight** bands, and the
+differences were resolved as follows rather than silently.
+
+**1. The B2B highlight has no prototype.** `prototype/02-landing-desktop.svg`
+folds it into service card 07 — the ink band under the services grid — and
+heads the six-point section "Why agencies choose us", which is item 5's slot
+with item 7's framing. §5 asks for both sections, so item 7 is built to the
+spec and **its copy is new**: eyebrow, heading, body, CTA and six pillars, none
+of them client-approved. This is the one part of the landing page that needs a
+copy review before go-live, alongside §19 item 8. The pillars describe
+capabilities rather than making promises, per Appendix A; the confidential
+invoicing pillar refers to the no-amounts invoice style in §10.
+
+It is built on the **mist** ground, not ink. Every other B2B moment on the page
+is dark, and the reviews band directly below it is ink — two dark bands in
+sequence read as one band with a seam.
+
+**2. "Icon-led" is a brass hairline, not an icon.** §5 item 5 says icon-led;
+the prototypes draw no icons anywhere on this page. Each card and point is led
+by a short brass rule instead — 58px across a card's top-start corner, 34px
+above a point. That is the §7 design language ("hairline rules, 2px radius, no
+drop shadows"), and a commissioned icon set would be a second visual system
+competing with the ogee arch. `content/services.ts` therefore carries no `icon`
+field, and no `headOffice` field either: nothing renders it, and an unused
+field is the kind of speculative flexibility this project has ruled against.
+Both are one line per entry to add back if icons are ever commissioned.
+
+**3. The arch stays closed to two surfaces.** §7 allows the ogee arch on the
+hero mask and the two-division card outlines *and nowhere else*. The prototypes
+exceed that twice — a filled arch as the coverage card icon, and a repeating
+arch arcade behind the consultation band at 10% opacity. Neither is built. A
+signature device stops being one when it appears on every card.
+
+**4. One string per card, at full length.** The desktop and mobile prototypes
+carry different service-card copy ("Haramain High-Speed Rail" vs "Haramain
+Rail"). The desktop wording is the single source: it is also the correct name,
+and two keys per card would mean translating everything twice and eventually
+updating one and not the other. Verified in Chrome at a 390px viewport — every
+full-length title sets on one line, summaries wrap to at most two, and neither
+axis scrolls.
+
+**5. Eyebrow colour depends on the ground.** §7's rule that every eyebrow uses
+`--brass-ink` is a fix for brass-on-light failing AA. On the ink and pine bands
+that same value is 1.9:1 — worse than the bug — so dark bands use `--gilt`,
+which §7 measures at 7.8:1 and exempts. Encoded once in the section component;
+no section chooses.
+
 ---
 
 ## 6. Internationalisation
@@ -1322,6 +1371,27 @@ Do not show a fake preview of the review "as it will appear." An unapproved revi
 **Email is never rendered publicly** — not in HTML, not in JSON, not in structured data.
 
 Approval triggers on-demand revalidation of the static pages.
+
+**Added in Phase 4 — on-demand revalidation is not sufficient on its own.**
+Prerendering happens during `next build`, where D1 is reached through
+Wrangler's *local* proxy rather than production. A deploy from a machine whose
+local database is empty therefore ships a landing page with an empty reviews
+band, and with nothing but approval-triggered revalidation it would stay empty
+until the next approval — which could be weeks after the deploy. The landing
+page carries `export const revalidate = 3600` as the backstop: one Worker
+invocation per hour per locale, and the band is never more than an hour stale.
+On-demand revalidation on approval remains the primary mechanism and is what
+makes a newly approved review appear promptly.
+
+Two consequences worth remembering:
+
+- **Never seed the local database with sample reviews.** Whatever is in local
+  D1 at build time is baked into the deployed HTML until the first
+  revalidation. Test rows must be deleted before building.
+- The public query lives in `src/db/queries/reviews.ts` and returns
+  `PublicReview`, a type with **no email field at all** — the same
+  allow-list discipline as the confidential invoice in §10, so a reviewer's
+  address cannot reach a component that might print it.
 
 ### 14.2 Enquiries
 

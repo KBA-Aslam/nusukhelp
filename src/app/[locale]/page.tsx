@@ -1,15 +1,47 @@
-import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
 
-import { Bidi } from '@/components/ui/bidi';
+import { B2bHighlight } from '@/components/landing/b2b-highlight';
+import { ContactSplit } from '@/components/landing/contact-split';
+import { Coverage } from '@/components/landing/coverage';
+import { FreeConsultation } from '@/components/landing/free-consultation';
+import { Hero } from '@/components/landing/hero';
+import { ReviewsSection } from '@/components/landing/reviews-section';
+import { ServicesGrid } from '@/components/landing/services-grid';
+import { TwoDivisions } from '@/components/landing/two-divisions';
+import { WhyChooseUs } from '@/components/landing/why-choose-us';
+import { getPublishedReviews } from '@/db/queries/reviews';
+
+/** How many reviews the landing band shows. The full list is `/reviews`. */
+const LANDING_REVIEW_COUNT = 3;
 
 /**
- * Landing page — Phase 3 placeholder.
+ * Re-render at most once an hour, on top of on-demand revalidation.
  *
- * Phase 4 replaces this body with the nine sections in §5, built off
- * `content/services.ts`. What ships here is only enough copy to prove the shell
- * works: the header, the footer, the type stack and the RTL flip all have
- * something to sit around.
+ * On-demand revalidation on review approval (§14.1) is the mechanism that puts
+ * a new review on the site, and it stays the primary one. This is the backstop
+ * for a case it does not cover: prerendering happens during `next build`, where
+ * D1 is reached through Wrangler's **local** proxy, not production. A deploy
+ * from a machine with an empty local database therefore ships a landing page
+ * whose reviews band is empty — and with nothing but on-demand revalidation it
+ * would stay empty until the next approval, which could be weeks. An hourly
+ * window costs one Worker invocation per hour per locale and closes that gap.
+ */
+export const revalidate = 3600;
+
+/**
+ * Landing page — the complete story, in the order §5 sets it.
+ *
+ *   1. Hero                2. Two divisions       3. Free consultation
+ *   4. Services            5. Why choose us       6. Coverage
+ *   7. B2B highlight       8. Reviews             9. Contact
+ *
+ * The order is the argument the page makes, so the sections are listed here
+ * flat rather than wrapped in anything clever — the file should read like §5.
+ *
+ * Only the reviews band touches the database. It is read at render time, which
+ * for this page means at build and again on each revalidation: approving a
+ * review in the admin panel revalidates this page, which is what puts the new
+ * quote on the site (§14.1). Nothing here is dynamic per request.
  */
 export default async function HomePage({
   params,
@@ -23,23 +55,19 @@ export default async function HomePage({
   // translation, and the whole route falls out of the static build.
   setRequestLocale(locale);
 
-  return <HomeContent />;
-}
-
-function HomeContent() {
-  const t = useTranslations('home');
+  const reviews = await getPublishedReviews(LANDING_REVIEW_COUNT);
 
   return (
-    <div className="mx-auto max-w-[90rem] px-5 py-20 sm:px-8 lg:px-12 lg:py-28">
-      <p className="font-sans text-[0.6875rem] font-semibold tracking-[0.24em] text-brass-ink uppercase">
-        <Bidi>{t('eyebrow')}</Bidi>
-      </p>
-      <h1 className="mt-5 max-w-3xl font-display text-4xl leading-[1.15] text-ink sm:text-5xl lg:text-6xl">
-        <Bidi>{t('title')}</Bidi>
-      </h1>
-      <p className="mt-6 max-w-2xl text-base leading-relaxed text-slate sm:text-lg">
-        <Bidi>{t('body')}</Bidi>
-      </p>
-    </div>
+    <>
+      <Hero />
+      <TwoDivisions />
+      <FreeConsultation />
+      <ServicesGrid />
+      <WhyChooseUs />
+      <Coverage />
+      <B2bHighlight />
+      <ReviewsSection reviews={reviews} />
+      <ContactSplit />
+    </>
   );
 }

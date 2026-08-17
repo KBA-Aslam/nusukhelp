@@ -12,6 +12,8 @@
  * What is here is only what the public marketing site needs at build time.
  */
 
+import { RESERVATION_SERVICES } from '@/content/services';
+
 /* --------------------------------------------------------------------------
    Contact
    -------------------------------------------------------------------------- */
@@ -77,22 +79,20 @@ export const PRIMARY_NAV: readonly NavItem[] = [
 /**
  * Footer columns.
  *
- * The Services column points at the six anchors on
- * `/al-haramain-reservation` (§4). They are the section ids that page is built
- * with in Phase 5, so these links are correct in advance rather than
- * placeholders to revisit.
+ * The Services column is **derived** from `RESERVATION_SERVICES`, not written
+ * out again. It previously repeated the six anchors on
+ * `/al-haramain-reservation` (§4) as literals, which would have gone stale the
+ * first time a service was renamed — and a footer link that 404s is a worse
+ * outcome than a footer whose order is not independently controllable. If the
+ * footer ever needs its own order, add an explicit order field to the content
+ * entries then; nothing needs it now.
+ *
+ * `labelKey` doubles as the service id, so `footer.services.*` and
+ * `services.items.*` stay keyed alike.
  */
-export const FOOTER_SERVICES: readonly NavItem[] = [
-  { href: '/al-haramain-reservation#hotels', labelKey: 'hotels' },
-  { href: '/al-haramain-reservation#transport', labelKey: 'transport' },
-  { href: '/al-haramain-reservation#rail', labelKey: 'rail' },
-  { href: '/al-haramain-reservation#ziyarat', labelKey: 'ziyarat' },
-  { href: '/al-haramain-reservation#permits', labelKey: 'permits' },
-  {
-    href: '/al-haramain-reservation#ground-handling',
-    labelKey: 'groundHandling',
-  },
-] as const;
+export const FOOTER_SERVICES: readonly NavItem[] = RESERVATION_SERVICES.map(
+  (service) => ({ href: service.href, labelKey: service.id }),
+);
 
 export const FOOTER_B2B: readonly NavItem[] = [
   { href: '/b2b', labelKey: 'agencySupport' },

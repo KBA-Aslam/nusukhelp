@@ -86,9 +86,209 @@
     "backHome": "Back to the homepage"
   },
 
+  "whatsapp": {
+    "consultation": "Hello Nusuk Help — I would like a free consultation about Hajj and Umrah.",
+    "b2b": "Hello Al Haramain Reservation — I represent a travel agency and would like to discuss hotels, transport and ground handling in Saudi Arabia."
+  },
+
   "home": {
-    "eyebrow": "Madinah Al Munawarah · Saudi Arabia",
-    "title": "Your trusted partner for Hajj & Umrah",
-    "body": "From Nusuk guidance and pilgrimage consultancy to hotels, transport, ziyarat and complete ground handling across Saudi Arabia."
+    "hero": {
+      "eyebrow": "Madinah Al Munawarah · Saudi Arabia",
+      "title": "Your trusted partner <gilt>for Hajj & Umrah</gilt>",
+      "body": "From Nusuk guidance and pilgrimage consultancy to hotels, transport, ziyarat and complete ground handling across Saudi Arabia.",
+      "exploreServices": "Explore services",
+      "divisionLink": "Al Haramain Reservation",
+      "divisionNote": "B2B reservation & ground handling for travel agencies"
+    },
+
+    "divisions": {
+      "eyebrow": "The two sides of what we do",
+      "heading": "One company, two ways in",
+
+      "pilgrims": {
+        "eyebrow": "For pilgrims & travellers",
+        "name": "Nusuk Help",
+        "points": {
+          "guidance": "Hajj & Umrah guidance",
+          "platform": "Nusuk platform assistance",
+          "permits": "Ziyarat & permit support"
+        },
+        "cta": "Get free consultation"
+      },
+
+      "agencies": {
+        "eyebrow": "For travel agencies & groups",
+        "name": "Al Haramain Reservation",
+        "points": {
+          "reservations": "Hotels, transport & rail",
+          "groundHandling": "Ground handling",
+          "rates": "Wholesale B2B rates"
+        },
+        "cta": "Explore reservation"
+      }
+    },
+
+    "consultation": {
+      "eyebrow": "No registration · No consultation fee",
+      "heading": "Need help with Nusuk?",
+      "body": "Preparing for Hajj, planning Umrah, or unsure where to start — our team will guide you.",
+      "cta": "Get free consultation"
+    }
+  },
+
+  "services": {
+    "eyebrow": "What we handle",
+    "heading": "Services",
+    "intro": "Saudi-side operations for agencies, groups and individual pilgrims.",
+    "readMore": "Read more",
+
+    "items": {
+      "hotels": {
+        "title": "Hotel Reservation",
+        "summary": "Makkah & Madinah · Markaziyah · 5★ to economy"
+      },
+      "transport": {
+        "title": "Transportation",
+        "summary": "Airport transfers · intercity · GMC, Hiace, bus"
+      },
+      "rail": {
+        "title": "Haramain High-Speed Rail",
+        "summary": "Makkah ↔ Madinah ↔ Jeddah · group tickets"
+      },
+      "ziyarat": {
+        "title": "Ziyarat & Local Services",
+        "summary": "Historical & religious sites · experienced guides"
+      },
+      "permits": {
+        "title": "Permit Assistance",
+        "summary": "Guidance through the official permit process"
+      },
+      "groundHandling": {
+        "title": "Ground Handling",
+        "summary": "Arrival, hotels, movement, 24/7 coordination"
+      },
+      "b2b": {
+        "eyebrow": "For travel agencies",
+        "title": "Your Saudi-side partner",
+        "summary": "Wholesale rates · group bookings · local representation",
+        "cta": "Partner with us"
+      }
+    }
+  },
+
+  "whyChooseUs": {
+    "eyebrow": "Why agencies choose us",
+    "heading": "Reliable on the ground",
+
+    "points": {
+      "reliableService": {
+        "title": "Reliable service",
+        "body": "Dependable execution, every booking"
+      },
+      "competitiveRates": {
+        "title": "Competitive rates",
+        "body": "Direct contracts and allotments"
+      },
+      "fastResponse": {
+        "title": "Fast response",
+        "body": "Answers in hours, not days"
+      },
+      "localExpertise": {
+        "title": "Local expertise",
+        "body": "Based in Madinah, on the ground"
+      },
+      "professionalCoordination": {
+        "title": "Professional coordination",
+        "body": "Booking through to check-out"
+      },
+      "b2bSupport": {
+        "title": "B2B support",
+        "body": "A dedicated agent for your account"
+      }
+    }
+  },
+
+  "coverage": {
+    "eyebrow": "Coverage",
+    "heading": "Serving pilgrims across Saudi Arabia",
+
+    "areas": {
+      "makkah": {
+        "name": "Makkah",
+        "detail": "Markaziyah hotels, ziyarat"
+      },
+      "madinah": {
+        "name": "Madinah",
+        "detail": "Head office · permits"
+      },
+      "jeddah": {
+        "name": "Jeddah",
+        "detail": "Transfers & rail links"
+      },
+      "elsewhere": {
+        "name": "Elsewhere",
+        "detail": "Custom Kingdom routing"
+      }
+    }
+  },
+
+  "b2bHighlight": {
+    "eyebrow": "B2B partnership",
+    "heading": "Built for agencies operating in Saudi Arabia",
+    "body": "One local partner for hotels, transport and ground handling — and the documentation your own clients need.",
+    "cta": "Become our partner",
+
+    "pillars": {
+      "wholesaleRates": {
+        "title": "Wholesale rates",
+        "body": "Direct contracts and allotments in Makkah and Madinah, subject to availability."
+      },
+      "groupReservations": {
+        "title": "Group reservations",
+        "body": "Room blocks, transport and rail arranged together for groups of any size."
+      },
+      "groundHandling": {
+        "title": "Ground handling",
+        "body": "Arrival to departure, coordinated by our own team inside the Kingdom."
+      },
+      "localRepresentation": {
+        "title": "Local representation",
+        "body": "A Saudi-side office acting for your agency, in the same time zone as your group."
+      },
+      "dedicatedAgent": {
+        "title": "A dedicated agent",
+        "body": "One named contact for your account, from first enquiry through to check-out."
+      },
+      "confidentialInvoicing": {
+        "title": "Confidential invoicing",
+        "body": "Booking documents without amounts, so your rates stay between your agency and us."
+      }
+    }
+  },
+
+  "reviews": {
+    "eyebrow": "Reviews",
+    "heading": "What our partners say",
+    "cta": "Leave a review",
+    "moderationNote": "Reviews are checked before they appear.",
+    "ratingLabel": "Rated {rating} out of 5",
+    "empty": "No reviews have been published yet. The first ones will appear here once they have been checked."
+  },
+
+  "contact": {
+    "eyebrow": "Contact",
+    "heading": "Two ways to reach us",
+
+    "pilgrims": {
+      "title": "For pilgrims",
+      "body": "Questions about Hajj, Umrah or Nusuk services?",
+      "cta": "Free consultation"
+    },
+
+    "agencies": {
+      "title": "For travel agencies",
+      "body": "Need Saudi hotel, transport or ground-handling support?",
+      "cta": "B2B enquiry"
+    }
   }
 }
