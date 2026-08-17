@@ -37,6 +37,14 @@
   --color-panel: #123a30; /* raised panel fill on ink                */
   --color-panel-deep: #0a342b; /* card fill on ink                        */
 
+  /* Form validation, added in Phase 6 with the first inputs on the site.
+     A muted brick rather than a pure red: it has to sit beside brass and
+     verdant without shouting, and it is 6.54:1 on white, 6.11:1 on sand and
+     5.58:1 on mist — AA on every ground a form can land on. Colour is never
+     the only signal; every error is also text, `aria-invalid` and
+     `aria-describedby` (see `components/forms/fields.tsx`). */
+  --color-error: #b3261e;
+
   /* --- Accessibility corrections ---------------------------------------
      `--color-brass` is 2.9:1 against `--color-sand`, which is fine for the
      hairline rules and decorative strokes it was measured from, but fails

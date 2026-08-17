@@ -1566,6 +1566,62 @@ Captures `audience` (pilgrim or agency) for triage. On submit: store, notify the
 
 WhatsApp converts far better in this market; the form is a fallback and a record.
 
+### Phase 6 rulings
+
+Built: `/api/reviews`, `/api/enquiries`, both forms, the `/reviews` route, the
+Resend notification, and a pre-filled WhatsApp message on every CTA. Secrets and
+their failure modes are documented in `docs/SECRETS.md`.
+
+**1. Every guard fails closed.** A missing `TURNSTILE_SECRET_KEY`, a missing
+`IP_HASH_SALT`, an unreachable Cloudflare, a network error — each rejects the
+submission. Nothing in either endpoint treats "could not check" as "check
+passed", which is the usual way a CAPTCHA integration ends up decorative. The
+same reflex governs the site key: with it unset the forms render a visible
+"not configured" notice rather than submitting without a token.
+
+**2. The honeypot answers `200`.** A bot that trips it gets a success response
+and nothing is stored. An error would teach the next version of the script to
+omit the field; a success never tells it anything at all.
+
+**3. The URL scan flags, it does not discard.** A comment containing a link is
+stored as `spam` rather than `pending` — stored, because §13 keeps a Spam tab
+and hard-deletes nothing, so a false positive is recoverable by a human while a
+silent drop is not. The pattern is deliberately loose for the same reason: the
+cost of over-matching is a genuine review landing one tab away from where it
+would otherwise be.
+
+**4. Enquiries get no URL scan.** A `spam` status is a *review* concept: reviews
+are published, so a link in one is an attempt to publish a link. An enquiry is a
+private message, and "our site is example.com" is the most ordinary sentence in
+a B2B first contact. Flagging it would train staff to ignore the flag.
+
+**5. Rate limits are per table.** Three reviews per IP hash per 24 hours and
+three enquiries, counted separately. Someone who has left three reviews can
+still send an enquiry — the abuse the limit targets is repetition of one kind of
+submission, and a customer doing both is not a bot. Reviews are counted across
+**all** statuses including `spam`, or the most abusive submitters would have an
+unlimited quota.
+
+**6. The notification is best-effort and the enquiry is stored first.** A Resend
+failure is logged and returns `ok` to the submitter, because the record is in
+the database and §13's triage queue is what the company actually works from. An
+error page would make a customer submit twice or give up, and the lead is
+already captured.
+
+**7. The confirmation says what §14.1 requires and nothing more.** *Received,
+and will appear once we have reviewed it.* No "published", no preview of the
+review as it will appear. The form is replaced by the confirmation rather than
+reset beneath it, so there is no half-state where a submitted review still sits
+in the inputs looking editable. The moderation note is also shown **before**
+submitting — someone deciding whether to write a review should know it is
+checked first.
+
+**8. Email never leaves the server.** `PublicReview` has no email field,
+`getPublishedReviewSummary` selects two aggregates and no columns, and
+`StoredEnquiry` drops the IP hash before the row reaches the email template.
+Each is the §10 allow-list discipline applied to a different leak: the type
+makes it impossible rather than unlikely.
+
 ---
 
 ## 15. Security
@@ -1798,9 +1854,9 @@ of that script once the translation lands.**
 
 **Phase 5 — Detail pages.** `/al-haramain-reservation` with six anchors, `/b2b`, `/about`, `/contact`, legal.
 
-**Phase 6 — Forms.** Turnstile, reviews API, enquiries API with audience split, notification email, WhatsApp CTAs. **Not built — Phase 7 shipped ahead of it (§19 item 13).** Three things from Phase 7 land here as well: the `/reviews` route, `/reviews` added to `PUBLIC_ROUTES` in `src/lib/public-routes.ts` so it enters the sitemap, and `challenges.cloudflare.com` added to `script-src` and `frame-src` in the CSP.
+**Phase 6 — Forms.** Turnstile, reviews API, enquiries API with audience split, notification email, WhatsApp CTAs. **Built after Phase 7**, which had shipped ahead of it. The three Phase 7 carry-overs are done: the `/reviews` route exists, it is in `PUBLIC_ROUTES` and therefore in the sitemap, and `challenges.cloudflare.com` is in `script-src` and `frame-src`. Rulings in §14.
 
-**Phase 7 — Launch prep.** SEO metadata, sitemap, JSON-LD, security headers, Lighthouse, accessibility, RTL QA. **Built and deployed, tagged `phase-7-seo`.** Not `v1.0-public` and **not go-live**: Phase 6 is unbuilt, so the public release is incomplete and the navigation carries two links to a route that does not exist yet. Go-live is Phase 6 plus the open items marked *Go-live* in §19.
+**Phase 7 — Launch prep.** SEO metadata, sitemap, JSON-LD, security headers, Lighthouse, accessibility, RTL QA. **Built and deployed, tagged `phase-7-seo`.** It shipped before Phase 6, so it was deliberately not tagged `v1.0-public`. With Phase 6 now built, go-live is the remaining open items marked *Go-live* in §19 — chiefly the Turnstile and Resend configuration in `docs/SECRETS.md`.
 
 ### Release 2 — Admin panel
 
@@ -1842,7 +1898,9 @@ of that script once the translation lands.**
 | 10 | Enable R2 on the Cloudflare account (needs a payment method on file, free 10 GB tier) | Client | **Phase 16** | Nothing — the `BACKUPS` binding stays commented out in `wrangler.jsonc` until then |
 | ~~11~~ | ~~Delete the registrar's parked `A` records on the `nusukhelp.com` apex in Cloudflare DNS~~ | Client | — | **Done in Phase 1.** Records deleted, both custom domains attached and serving over HTTPS. See §3. |
 | 12 | Legal review of `/privacy` and `/terms` | Client | Go-live | The drafts written in Phase 5 — starting points, not finished documents |
-| 13 | **Phase 6 is unbuilt** — no forms, no Turnstile, no `/reviews` route. `PRIMARY_NAV` and the landing reviews CTA both link to it, so the live site has two links to a 404 | Build | **Go-live** | Nothing — the links stay, and resolve when Phase 6 ships |
+| ~~13~~ | ~~Phase 6 is unbuilt~~ | Build | — | **Done.** Forms, Turnstile, both endpoints and `/reviews` shipped; the navigation links now resolve. See §14 |
+| 17 | Create the Turnstile widget and set the three secrets — see `docs/SECRETS.md`. **Both forms are inert until this is done**, by design | Client | **Go-live** | Nothing; the forms show a visible "not configured" notice |
+| 18 | Verify `nusukhelp.com` as a sending domain in Resend, or the enquiry notification never arrives (enquiries are still stored) | Client | Go-live | `notifications@nusukhelp.com` as the sender |
 | 14 | Decide on Cloudflare's managed `robots.txt` — it prepends an AI-crawler block ahead of ours (see §17 below) | Client | Go-live | The combined file as served today; our `/admin` disallow is effective either way |
 | 15 | Decide on HSTS `preload` — a near-irreversible commitment for every future subdomain (§15) | Client | Go-live | `max-age=63072000; includeSubDomains`, no `preload` |
 | 16 | Turn `workers_dev` off in `wrangler.jsonc` — a second reachable hostname is duplicate content (§17). Deferred past Phase 7 deliberately: the preview URL is how each phase is verified over HTTPS, and canonicals mitigate it meanwhile | Build | Go-live, **after Phase 6** | `workers_dev: true` |

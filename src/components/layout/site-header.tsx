@@ -54,8 +54,12 @@ export function SiteHeader() {
             <LocaleSwitcher />
           </div>
 
+          {/* Pre-filled, like every other WhatsApp CTA on the site (§14.3).
+              It used to open an empty thread, which put the burden of the
+              first sentence on the reader at exactly the moment they had
+              decided to make contact. */}
           <a
-            href={whatsappUrl()}
+            href={whatsappUrl(t('whatsapp.consultation'))}
             target="_blank"
             rel="noopener noreferrer"
             className="hidden min-h-11 items-center rounded-[2px] bg-verdant px-6 text-sm font-semibold tracking-[0.03em] text-white transition-colors hover:bg-pine lg:inline-flex"

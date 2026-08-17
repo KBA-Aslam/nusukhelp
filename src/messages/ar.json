@@ -682,5 +682,89 @@
         "body": "Questions about these terms: write to {email} or call {phone}."
       }
     }
+  },
+
+  "forms": {
+    "submitting": "Sending…",
+    "fields": {
+      "name": "Your name",
+      "email": "Email address",
+      "emailHint": "Not published — we only use it to reply to you.",
+      "phone": "Phone or WhatsApp",
+      "company": "Agency name",
+      "rating": "Rating",
+      "ratingOption": "{rating} out of 5",
+      "country": "Country",
+      "serviceUsed": "Service you used",
+      "serviceInterest": "What you need help with",
+      "comment": "Your review",
+      "commentHint": "At least {min} characters, so it is useful to other pilgrims.",
+      "message": "Message"
+    },
+    "errors": {
+      "generic": "Something went wrong and your message was not sent. Please try again.",
+      "rejected": "We could not verify that you are human. Please complete the verification and try again.",
+      "rateLimited": "You have already sent us several messages today. Please try again tomorrow, or reach us on WhatsApp.",
+      "unavailable": "The form is temporarily unavailable. Please reach us on WhatsApp or by email instead.",
+      "network": "We could not reach the server. Please check your connection and try again."
+    },
+    "review": {
+      "submit": "Submit review",
+      "moderationNote": "Reviews are checked by a person before they appear on the site.",
+      "errors": {
+        "name": "Please enter your name.",
+        "email": "Please enter a valid email address.",
+        "rating": "Please choose a rating.",
+        "comment": "Please write at least 20 characters."
+      },
+      "success": {
+        "eyebrow": "Received",
+        "heading": "Thank you for your review",
+        "body": "Your review has been received and will appear on the site once we have reviewed it."
+      }
+    },
+    "enquiry": {
+      "submit": "Send enquiry",
+      "audience": {
+        "legend": "Who are you enquiring as?",
+        "pilgrim": "A pilgrim or family",
+        "agency": "A travel agency"
+      },
+      "messageHint": {
+        "pilgrim": "Tell us your dates, how many people, and which cities — at least {min} characters.",
+        "agency": "Tell us your dates, group size, cities and what you need handled — at least {min} characters."
+      },
+      "errors": {
+        "name": "Please enter your name.",
+        "email": "Please enter a valid email address.",
+        "message": "Please write at least 20 characters."
+      },
+      "section": {
+        "eyebrow": "Enquiry form",
+        "heading": "Or send us the details",
+        "intro": "WhatsApp is faster, but if you would rather write it out, this reaches the same team and we reply by email."
+      },
+      "success": {
+        "eyebrow": "Received",
+        "heading": "Thank you — we have your enquiry",
+        "body": "We have received your message and will reply by email. If it is urgent, WhatsApp reaches us fastest."
+      }
+    }
+  },
+
+  "reviewsPage": {
+    "meta": {
+      "title": "Reviews",
+      "description": "Reviews from pilgrims and travel agencies who have used Nusuk Help for Hajj and Umrah guidance, hotels, transport and ground handling in Saudi Arabia."
+    },
+    "eyebrow": "Reviews",
+    "title": "What pilgrims and agencies say",
+    "lead": "Every review here was submitted by someone who used our services, and checked by a person before it was published.",
+    "listHeading": "Published reviews",
+    "form": {
+      "eyebrow": "Leave a review",
+      "heading": "Tell us how it went",
+      "intro": "If we arranged something for you, we would like to hear about it — the parts that worked and the parts that did not."
+    }
   }
 }

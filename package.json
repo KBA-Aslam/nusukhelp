@@ -20,11 +20,14 @@
     "db:migrate:remote": "wrangler d1 migrations apply nusukhelp-db --remote"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.9.1",
     "drizzle-orm": "^0.45.2",
     "next": "15.5.23",
     "next-intl": "^4.13.6",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "react-hook-form": "^7.85.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

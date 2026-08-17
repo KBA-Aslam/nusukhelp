@@ -40,9 +40,12 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
  * where a stored-XSS bug would actually cost something. The nonce belongs in
  * the admin middleware with a policy of its own, not in this one.
  *
- * **Phase 6 will add hosts.** Turnstile needs `challenges.cloudflare.com` in
- * `script-src` and `frame-src`. It is not listed yet — a policy that permits a
- * host nothing loads from is a policy nobody trusts. Tracked in §19.
+ * **Phase 6 added the Turnstile hosts.** `challenges.cloudflare.com` is now in
+ * `script-src` (the widget's `api.js`) and `frame-src` (the challenge itself
+ * runs in an iframe). Those are the two directives Cloudflare's own CSP
+ * documentation names, and no others: the widget's network calls happen inside
+ * its iframe, under that frame's origin rather than this document's, so
+ * `connect-src` stays `'self'`. Nothing else was widened.
  *
  * The rest is the standard hardening set: nothing may frame this site
  * (`frame-ancestors 'none'`, alongside the X-Frame-Options header for older
@@ -62,7 +65,8 @@ const CONTENT_SECURITY_POLICY = [
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+  "frame-src https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self'",

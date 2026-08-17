@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { useTranslations } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
+import { EnquiryForm } from '@/components/forms/enquiry-form';
 import { PageHeader } from '@/components/pages/page-header';
 import { Bidi } from '@/components/ui/bidi';
 import { BrandIcon } from '@/components/ui/brand-icons';
@@ -65,8 +66,42 @@ export default async function ContactPage({
     <>
       <ContactHeader />
       <Audiences />
+      <EnquirySection />
       <DirectLines />
     </>
+  );
+}
+
+/**
+ * The enquiry form (§14.2), placed **after** the WhatsApp panels and before the
+ * direct lines.
+ *
+ * That order is §14.3's ranking made into a layout: WhatsApp converts far
+ * better in this market and gets the top of the page, and the form is the
+ * fallback — and the record, which WhatsApp is not. Putting the form first
+ * would read as the primary path and quietly invert the ranking the spec sets.
+ */
+function EnquirySection() {
+  const t = useTranslations('forms.enquiry.section');
+
+  return (
+    <Section tone="sand" labelledBy="enquiry-heading">
+      <div className="max-w-3xl">
+        <SectionHeading
+          tone="sand"
+          id="enquiry-heading"
+          eyebrow={t('eyebrow')}
+          heading={t('heading')}
+          intro={t('intro')}
+        />
+        <div className="mt-8 lg:mt-10">
+          {/* Opens on the pilgrim panel — the larger audience on this page.
+              An agency switches with one tap, and `/b2b` sends its readers
+              straight to WhatsApp with the B2B pre-fill anyway. */}
+          <EnquiryForm defaultAudience="pilgrim" />
+        </div>
+      </div>
+    </Section>
   );
 }
 

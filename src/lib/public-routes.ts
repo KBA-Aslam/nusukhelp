@@ -16,8 +16,9 @@
  * honest is `npm run build` printing the prerendered routes — a page here with
  * no route is a build-time 404, not a silent one.
  *
- * **`/reviews` is absent deliberately.** Add it in Phase 6, in the same commit
- * that builds the page. See §19.
+ * `/reviews` joined the list in Phase 6, in the commit that built the page —
+ * which is what the Phase 7 note asked for. Every route in §4's public map now
+ * exists.
  */
 
 export type PublicRoute = {
@@ -36,6 +37,8 @@ export const PUBLIC_ROUTES: readonly PublicRoute[] = [
   { path: '/', priority: 1, changeFrequency: 'monthly' },
   { path: '/al-haramain-reservation', priority: 0.9, changeFrequency: 'monthly' },
   { path: '/b2b', priority: 0.8, changeFrequency: 'monthly' },
+  // Monthly, not yearly: it gains a document every time a review is approved.
+  { path: '/reviews', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/about', priority: 0.6, changeFrequency: 'yearly' },
   { path: '/contact', priority: 0.6, changeFrequency: 'yearly' },
   { path: '/privacy', priority: 0.2, changeFrequency: 'yearly' },

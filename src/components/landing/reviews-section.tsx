@@ -1,5 +1,6 @@
 import { useTranslations } from 'next-intl';
 
+import { ReviewStars } from '@/components/reviews/stars';
 import { Bidi } from '@/components/ui/bidi';
 import { ButtonLink } from '@/components/ui/cta';
 import { Section, SectionHeading } from '@/components/ui/section';
@@ -18,8 +19,8 @@ import type { PublicReview } from '@/db/queries/reviews';
  * it does not hide, because the *Leave a review* CTA is the point of the band.
  * The prototype's three quotes are mockup content, not seed data.
  *
- * The submission form itself is Phase 6; the CTA points at `/reviews`, which
- * Phase 5 builds.
+ * The CTA points at `/reviews`, which carries the full published list and the
+ * submission form itself (Phase 6).
  */
 export function ReviewsSection({ reviews }: { reviews: PublicReview[] }) {
   const t = useTranslations('reviews');
@@ -45,7 +46,7 @@ export function ReviewsSection({ reviews }: { reviews: PublicReview[] }) {
               key={review.id}
               className="flex flex-col rounded-[2px] bg-panel-deep p-6 sm:p-7"
             >
-              <Stars rating={review.rating} label={t('ratingLabel', { rating: review.rating })} />
+              <ReviewStars rating={review.rating} tone="onDark" />
 
               <blockquote className="mt-4 grow text-sm leading-relaxed text-onink">
                 <Bidi>{review.comment}</Bidi>
@@ -83,36 +84,5 @@ export function ReviewsSection({ reviews }: { reviews: PublicReview[] }) {
         </p>
       ) : null}
     </Section>
-  );
-}
-
-/**
- * Five stars, `rating` of them filled.
- *
- * The glyphs are decoration — the rating is announced once, from the label —
- * otherwise a screen reader reads "black star" five times per review.
- *
- * The label is **visually hidden text, not `aria-label`**. ARIA's own rules
- * only permit a label on elements with a semantic role, and a `<p>` maps to
- * `generic`: some screen readers announce an `aria-label` there, others drop
- * it silently, and the ones that drop it leave the rating unannounced
- * altogether because the glyphs beside it are hidden. `sr-only` text is read by
- * every one of them, and it is translated the same way.
- */
-function Stars({ rating, label }: { rating: number; label: string }) {
-  return (
-    <p className="text-sm tracking-[0.18em]">
-      <span className="sr-only">{label}</span>
-      <span aria-hidden="true">
-        {[1, 2, 3, 4, 5].map((position) => (
-          <span
-            key={position}
-            className={position <= rating ? 'text-gilt' : 'text-onink-muted/40'}
-          >
-            ★
-          </span>
-        ))}
-      </span>
-    </p>
   );
 }

@@ -1,6 +1,6 @@
-import { avg, count, desc, eq } from 'drizzle-orm';
+import { and, avg, count, desc, eq, gte } from 'drizzle-orm';
 
-import { getDbForRender } from '../index';
+import { getDb, getDbForRender } from '../index';
 import { reviews } from '../schema';
 
 /**
@@ -93,4 +93,63 @@ export async function getPublishedReviewSummary(): Promise<ReviewSummary | null>
   if (!Number.isFinite(average) || average <= 0) return null;
 
   return { count: row.total, average: Math.round(average * 10) / 10 };
+}
+
+/* --------------------------------------------------------------------------
+   Writes — Phase 6
+
+   The public endpoint's two database needs: count what this address has sent
+   recently, and store the submission. Both go through `getDb`, not
+   `getDbForRender`: a route handler always runs in a request with a real
+   binding, and a missing database there is a fault worth throwing on rather
+   than a reason to silently accept a submission nobody stored.
+   -------------------------------------------------------------------------- */
+
+/**
+ * How many reviews this IP hash has submitted since `since` (§14.1 — 3 per IP
+ * hash per 24 hours).
+ *
+ * Counts **every status**, `spam` included. A bot that trips the URL filter
+ * three times has still used its allowance, and excluding spam would hand the
+ * most abusive submitters an unlimited quota — exactly backwards.
+ */
+export async function countReviewsByIpSince(
+  ipHash: string,
+  since: number,
+): Promise<number> {
+  const db = getDb();
+
+  const [row] = await db
+    .select({ total: count() })
+    .from(reviews)
+    .where(and(eq(reviews.ipHash, ipHash), gte(reviews.createdAt, since)));
+
+  return row?.total ?? 0;
+}
+
+/**
+ * Stores a submitted review.
+ *
+ * `status` is passed by the route — `pending`, or `spam` when the comment
+ * carries a URL (§14.1). It is never taken from the request body: nothing a
+ * submitter sends can publish their own review.
+ */
+export async function insertReview(input: {
+  name: string;
+  email: string;
+  rating: number;
+  comment: string;
+  serviceUsed: string | null;
+  country: string | null;
+  status: 'pending' | 'spam';
+  ipHash: string;
+  locale: string;
+}): Promise<void> {
+  const db = getDb();
+
+  await db.insert(reviews).values({
+    id: crypto.randomUUID(),
+    ...input,
+    createdAt: Date.now(),
+  });
 }

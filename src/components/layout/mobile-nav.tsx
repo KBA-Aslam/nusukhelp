@@ -79,8 +79,10 @@ export function MobileNav() {
             </ul>
 
             <div className="flex flex-col gap-3 py-4">
+              {/* Same pre-fill as the desktop header CTA — one message key,
+                  not a second string that could drift from it. */}
               <a
-                href={whatsappUrl()}
+                href={whatsappUrl(t('whatsapp.consultation'))}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex min-h-12 items-center justify-center rounded-[2px] bg-verdant px-5 text-sm font-semibold tracking-[0.03em] text-white"
