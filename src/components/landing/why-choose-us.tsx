@@ -2,9 +2,8 @@ import { useTranslations } from 'next-intl';
 
 import { Bidi } from '@/components/ui/bidi';
 import { BrandIcon } from '@/components/ui/brand-icons';
+import { Section, SectionHeading } from '@/components/ui/section';
 import { WHY_CHOOSE_US } from '@/content/services';
-
-import { Section, SectionHeading } from './section';
 
 /**
  * §5 item 5 — six points on a mist band.

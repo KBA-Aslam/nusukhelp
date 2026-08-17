@@ -2,10 +2,9 @@ import { useTranslations } from 'next-intl';
 
 import { Bidi } from '@/components/ui/bidi';
 import { BrandIcon } from '@/components/ui/brand-icons';
+import { ButtonLink } from '@/components/ui/cta';
+import { Section, SectionHeading } from '@/components/ui/section';
 import { B2B_PILLARS } from '@/content/services';
-
-import { ButtonLink } from './cta';
-import { Section, SectionHeading } from './section';
 
 /**
  * §5 item 7 — the B2B highlight. Six pillars and a *Become our partner* CTA.

@@ -2,11 +2,10 @@ import { useTranslations } from 'next-intl';
 
 import { Bidi } from '@/components/ui/bidi';
 import { BrandIcon } from '@/components/ui/brand-icons';
+import { ArrowLink } from '@/components/ui/cta';
+import { Section, SectionHeading } from '@/components/ui/section';
 import { CONTACT_AUDIENCES } from '@/content/services';
 import { whatsappUrl } from '@/lib/site';
-
-import { ArrowLink } from './cta';
-import { Section, SectionHeading } from './section';
 
 /**
  * §5 item 9 — contact, split by audience.

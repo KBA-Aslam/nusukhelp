@@ -2,11 +2,10 @@ import { useTranslations } from 'next-intl';
 
 import { Bidi } from '@/components/ui/bidi';
 import { BrandIcon } from '@/components/ui/brand-icons';
+import { ButtonLink } from '@/components/ui/cta';
+import { Section, SectionHeading } from '@/components/ui/section';
 import { SERVICES } from '@/content/services';
 import { Link } from '@/i18n/navigation';
-
-import { ButtonLink } from './cta';
-import { Section, SectionHeading } from './section';
 
 /**
  * §5 item 4 — the services grid. Seven cards off `content/services.ts`.

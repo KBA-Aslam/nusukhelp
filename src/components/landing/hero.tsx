@@ -3,16 +3,15 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 
 import { Bidi } from '@/components/ui/bidi';
+import { ArrowLink, ButtonLink } from '@/components/ui/cta';
 import {
   HERO_PANEL_ASPECT,
   OgeeArchClipDefs,
   OgeeArchMask,
   OgeeArchPanelOutline,
 } from '@/components/ui/ogee-arch';
+import { CONTAINER } from '@/components/ui/section';
 import { whatsappUrl } from '@/lib/site';
-
-import { ArrowLink, ButtonLink } from './cta';
-import { CONTAINER } from './section';
 
 /**
  * §5 item 1 — hero. Ink band, three CTAs, arch-masked panel.

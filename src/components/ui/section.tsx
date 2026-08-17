@@ -3,12 +3,17 @@ import type { ReactNode } from 'react';
 import { Bidi } from '@/components/ui/bidi';
 
 /**
- * The landing page's band system.
+ * The site's band system.
  *
  * §5 is a stack of full-width bands, and the prototype alternates their grounds
  * — sand, sand, pine, sand, mist, sand, pine, ink, sand — so no two adjacent
  * sections read as one. `tone` is the only knob: it fixes the ground, the
  * heading colour, the body colour and, importantly, the eyebrow colour.
+ *
+ * It lived under `components/landing/` until Phase 5, when the six detail pages
+ * in §4 turned out to be the same stack of bands with different content. Moving
+ * it here (with `cta.tsx`) is what stops `components/landing/` becoming the
+ * place shared primitives happen to live. Nothing about the component changed.
  *
  * **Eyebrow colour is not a free choice.** §7 requires `--brass-ink` for
  * eyebrows because plain `--brass` is 2.9:1 on sand and fails AA. That

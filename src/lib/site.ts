@@ -33,9 +33,16 @@ export const PHONE_HREF = 'tel:+966576799128';
 
 /** Secondary line from §1 — Bangladesh desk. */
 export const PHONE_ALT_DISPLAY = '+880 1690 029832';
+export const PHONE_ALT_HREF = 'tel:+8801690029832';
 
 export const EMAIL = 'Nusukhelp@outlook.com';
 export const EMAIL_HREF = 'mailto:Nusukhelp@outlook.com';
+
+/*
+ * The office location is deliberately *not* a constant here. It is a place
+ * name, so it translates — the contact page and the footer both read
+ * `footer.location`, and the Arabic drop changes one value.
+ */
 
 export const SITE_URL = 'https://nusukhelp.com';
 
@@ -107,6 +114,40 @@ export const FOOTER_COMPANY: readonly NavItem[] = [
   { href: '/reviews', labelKey: 'reviews' },
   { href: '/privacy', labelKey: 'privacy' },
   { href: '/terms', labelKey: 'terms' },
+] as const;
+
+/* --------------------------------------------------------------------------
+   Contact channels — `/contact`
+
+   The company's four reachable addresses, in the order §14.3 ranks them:
+   WhatsApp first, because it is the primary contact action in this market, then
+   the two phone lines, then email. The office location is not in this list —
+   it is a place, not a channel, and it is copy (`footer.location`) because it
+   translates.
+
+   `value` is the string the reader sees, and it is a constant rather than a
+   message key: a phone number and an email address are the same Latin island
+   in both locales, and §19 items 3 and 4 will replace them here.
+
+   Message keys — `contact.channels.<labelKey>`.
+   -------------------------------------------------------------------------- */
+
+export type ContactChannel = {
+  readonly labelKey: string;
+  /**
+   * `null` for WhatsApp alone: its deep link carries a translated pre-fill, so
+   * it can only be built at render. Everything else is a fixed `tel:` or
+   * `mailto:`.
+   */
+  readonly href: string | null;
+  readonly value: string;
+};
+
+export const CONTACT_CHANNELS: readonly ContactChannel[] = [
+  { labelKey: 'whatsapp', href: null, value: PHONE_DISPLAY },
+  { labelKey: 'phone', href: PHONE_HREF, value: PHONE_DISPLAY },
+  { labelKey: 'phoneAlt', href: PHONE_ALT_HREF, value: PHONE_ALT_DISPLAY },
+  { labelKey: 'email', href: EMAIL_HREF, value: EMAIL },
 ] as const;
 
 /* --------------------------------------------------------------------------

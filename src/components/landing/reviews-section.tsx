@@ -1,10 +1,9 @@
 import { useTranslations } from 'next-intl';
 
 import { Bidi } from '@/components/ui/bidi';
+import { ButtonLink } from '@/components/ui/cta';
+import { Section, SectionHeading } from '@/components/ui/section';
 import type { PublicReview } from '@/db/queries/reviews';
-
-import { ButtonLink } from './cta';
-import { Section, SectionHeading } from './section';
 
 /**
  * §5 item 8 — reviews. Ink band, published reviews only.

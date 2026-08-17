@@ -1,11 +1,10 @@
 import { useTranslations } from 'next-intl';
 
 import { Bidi } from '@/components/ui/bidi';
+import { ButtonLink } from '@/components/ui/cta';
 import { KuficPattern } from '@/components/ui/kufic-pattern';
+import { CONTAINER } from '@/components/ui/section';
 import { whatsappUrl } from '@/lib/site';
-
-import { ButtonLink } from './cta';
-import { CONTAINER } from './section';
 
 /**
  * §5 item 3 — the free consultation block.

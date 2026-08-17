@@ -1,11 +1,10 @@
 import { useTranslations } from 'next-intl';
 
 import { Bidi } from '@/components/ui/bidi';
+import { ArrowLink } from '@/components/ui/cta';
 import { KuficCorners, OgeeArchOutline } from '@/components/ui/ogee-arch';
+import { Section, SectionHeading } from '@/components/ui/section';
 import { whatsappUrl } from '@/lib/site';
-
-import { ArrowLink } from './cta';
-import { Section, SectionHeading } from './section';
 
 /**
  * §5 item 2 — the two divisions. The signature element.

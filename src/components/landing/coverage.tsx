@@ -4,9 +4,8 @@ import { Bidi } from '@/components/ui/bidi';
 import { BrandIcon } from '@/components/ui/brand-icons';
 import { KuficPattern } from '@/components/ui/kufic-pattern';
 import { OgeeArchOutline } from '@/components/ui/ogee-arch';
+import { Section, SectionHeading } from '@/components/ui/section';
 import { COVERAGE_AREAS } from '@/content/services';
-
-import { Section, SectionHeading } from './section';
 
 /**
  * §5 item 6 — coverage. Four areas, "the core B2B differentiator".
