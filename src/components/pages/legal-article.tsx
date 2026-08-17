@@ -7,6 +7,18 @@ import { CONTAINER } from '@/components/ui/section';
 import type { LegalSection } from '@/content/legal';
 import { LEGAL_UPDATED } from '@/content/legal';
 import { formatDate } from '@/lib/format';
+import { EMAIL, PHONE_DISPLAY } from '@/lib/site';
+
+/**
+ * Values every section body and bullet is rendered with.
+ *
+ * Both documents end by telling the reader where to write, and neither hard-
+ * codes the address into its copy: §19 items 3 and 4 will replace the company's
+ * contact details, and a legal page that still quotes the old number after that
+ * is a worse failure than a stale marketing line. next-intl ignores values a
+ * message does not use, so passing them everywhere costs nothing.
+ */
+const CONTACT_VALUES = { email: EMAIL, phone: PHONE_DISPLAY } as const;
 
 /**
  * `/privacy` and `/terms` — one renderer, two documents (§4).
@@ -84,7 +96,9 @@ export function LegalArticle({
               </h2>
 
               <p className="mt-3 text-[0.9375rem] leading-relaxed text-slate">
-                <Bidi>{t(`sections.${section.id}.body`)}</Bidi>
+                <Bidi>
+                  {t(`sections.${section.id}.body`, CONTACT_VALUES)}
+                </Bidi>
               </p>
 
               {section.bullets ? (
@@ -95,7 +109,10 @@ export function LegalArticle({
                         —
                       </span>
                       <Bidi>
-                        {t(`sections.${section.id}.bullets.${bullet}`)}
+                        {t(
+                          `sections.${section.id}.bullets.${bullet}`,
+                          CONTACT_VALUES,
+                        )}
                       </Bidi>
                     </li>
                   ))}

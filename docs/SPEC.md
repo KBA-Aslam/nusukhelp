@@ -1307,6 +1307,19 @@ Snapshotted onto each booking at confirmation, so a booking always carries the t
 
 *(Wording changed from "voucher" to "invoice" to match the document type.)*
 
+**Phase 5 ruling — the public `/terms` page does not reproduce this section.**
+These booking terms are snapshotted onto a booking at confirmation and are
+editable in company settings, so a hard-coded copy of them on the marketing
+site would drift from the authoritative text the first time an admin edited it
+— and the drifted copy would be the one a customer read *before* booking, which
+is the worst place for the two to disagree. `/terms` instead carries a
+`bookingTerms` section stating that the terms in force are issued with the
+confirmation and printed in full on the invoice, listing what they cover
+(payment and confirmation, cancellation and refund, hotel policy, and changes
+outside the company's control) and inviting the reader to ask for the current
+version. One text, one place. If the public site ever needs to *display* these
+terms, it must read them from `company_settings`, not restate them.
+
 ---
 
 ## 12. Authentication & roles
@@ -1694,6 +1707,7 @@ product if and only if the evidence says the hand-rolled path is not enough.
 | 9 | Verify current ZATCA VAT registration threshold | Client | Future | n/a — see §9.9 |
 | 10 | Enable R2 on the Cloudflare account (needs a payment method on file, free 10 GB tier) | Client | **Phase 16** | Nothing — the `BACKUPS` binding stays commented out in `wrangler.jsonc` until then |
 | ~~11~~ | ~~Delete the registrar's parked `A` records on the `nusukhelp.com` apex in Cloudflare DNS~~ | Client | — | **Done in Phase 1.** Records deleted, both custom domains attached and serving over HTTPS. See §3. |
+| 12 | Legal review of `/privacy` and `/terms` | Client | Go-live | The drafts written in Phase 5 — starting points, not finished documents |
 
 Item 1 now covers two things, and they go to the advisor **together**. The
 affiliation disclaimer is a legal statement, not marketing copy, and it is the
@@ -1705,6 +1719,24 @@ versions must be reviewed as a pair: an Arabic rendering that is weaker than the
 English one leaves the Arabic audience with a disclaimer that does not disclaim.
 It also means the disclaimer must **not** be quietly overwritten when the bulk
 translation drop lands.
+
+Item 12 is new in Phase 5 and needs its scope stated precisely, because the two
+pages are not equally provisional. Both are **drafted, not reviewed**: the
+liability, governing-law, retention and data-rights wording is a lawyer's to
+write, and nothing in either page should be treated as settled. But one part of
+`/privacy` is not a drafting question at all — the `collect` and `use` sections
+describe what the site actually does, and they were written from
+`db/schema.ts` and `db/queries/reviews.ts` rather than from a template. A
+published review shows the name, country, rating and comment the reviewer gave,
+and never the email address, because `PublicReview` has no email field (§14.1).
+That description must stay accurate from day one and must be updated whenever
+the schema or the queries change, regardless of where the legal review has got
+to. A wrong description of behaviour is a misrepresentation whoever reviews the
+wording afterwards.
+
+Item 8 (legal review of the permit-assistance copy) and item 12 go to the same
+advisor and should go together: `/terms` now carries a `permits` section that
+restates Appendix A in the binding document, so the two texts have to agree.
 
 Item 10 is the exception to the framing above: it blocks build work, not just
 go-live. R2 was not enabled when Phase 1 shipped, and a deploy carrying an

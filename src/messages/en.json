@@ -88,7 +88,8 @@
 
   "whatsapp": {
     "consultation": "Hello Nusuk Help — I would like a free consultation about Hajj and Umrah.",
-    "b2b": "Hello Al Haramain Reservation — I represent a travel agency and would like to discuss hotels, transport and ground handling in Saudi Arabia."
+    "b2b": "Hello Al Haramain Reservation — I represent a travel agency and would like to discuss hotels, transport and ground handling in Saudi Arabia.",
+    "serviceEnquiry": "Hello Al Haramain Reservation — I would like to ask about {service} in Saudi Arabia."
   },
 
   "home": {
@@ -283,13 +284,403 @@
     "pilgrims": {
       "title": "For pilgrims",
       "body": "Questions about Hajj, Umrah or Nusuk services?",
-      "cta": "Free consultation"
+      "cta": "Free consultation",
+      "include": "Useful to include: where you are travelling from, your dates, how many of you there are, and what you need help with — Nusuk, permits, hotels, or the whole trip."
     },
 
     "agencies": {
       "title": "For travel agencies",
       "body": "Need Saudi hotel, transport or ground-handling support?",
-      "cta": "B2B enquiry"
+      "cta": "B2B enquiry",
+      "include": "Useful to include: the city, the dates, the group size, the hotel grade you have in mind, and which services you need us to cover."
+    },
+
+    "page": {
+      "meta": {
+        "title": "Contact",
+        "description": "Reach Nusuk Help and Al Haramain Reservation by WhatsApp, phone or email. Free consultation for pilgrims, B2B enquiries for travel agencies."
+      },
+      "eyebrow": "Contact",
+      "title": "Talk to us",
+      "lead": "WhatsApp is the fastest way to reach us and the one most of our clients use. Tell us who you are and what you need, and we will come back with something concrete."
+    },
+
+    "direct": {
+      "eyebrow": "Direct lines",
+      "heading": "Other ways to reach us"
+    },
+
+    "channels": {
+      "whatsapp": "WhatsApp",
+      "phone": "Phone — Saudi Arabia",
+      "phoneAlt": "Phone — Bangladesh",
+      "email": "Email"
+    },
+
+    "office": {
+      "heading": "Office",
+      "note": "We work to Riyadh time (GMT+3), so a message sent overnight will usually be answered the next working day."
+    }
+  },
+
+  "legal": {
+    "lastUpdated": "Last updated {date}"
+  },
+
+  "reservation": {
+    "meta": {
+      "title": "Al Haramain Reservation",
+      "description": "Hotels, transport, Haramain rail, ziyarat, permit assistance and ground handling in Makkah, Madinah and Jeddah — arranged from Madinah for agencies, groups and pilgrims."
+    },
+
+    "eyebrow": "Al Haramain Reservation · B2B division of Nusuk Help",
+    "title": "Reservation and ground handling inside the Kingdom",
+    "lead": "Hotels, transport, Haramain rail, ziyarat, permit assistance and complete ground handling — arranged from our office in Madinah for travel agencies, groups and individual pilgrims.",
+    "cta": "Message us on WhatsApp",
+    "partnerCta": "Partner with us",
+    "onThisPage": "On this page",
+    "sectionCta": "Ask about {service}",
+    "noteLabel": "Important",
+
+    "sections": {
+      "hotels": {
+        "lead": "Rooms in Makkah and Madinah across every grade — Markaziyah properties within walking distance of the Haram, and quieter hotels a short transfer away. We work with a range of properties directly and confirm what is genuinely free on your dates rather than quoting from a list.",
+        "points": {
+          "grades": "Five-star to economy, in Makkah and Madinah, central and outer areas",
+          "blocks": "Room blocks for groups, held together under a single booking",
+          "meals": "Room-only, breakfast or full board, according to each hotel's own plans",
+          "distance": "Distance to the Haram described as it actually is, not rounded down",
+          "availability": "Rates and rooms confirmed for your dates, subject to availability"
+        }
+      },
+
+      "transport": {
+        "lead": "Airport transfers, intercity movements and vehicles held for the length of a group's stay. GMC, Hiace and coaches, matched to the size of the party rather than to whatever happens to be free.",
+        "points": {
+          "airport": "Arrival and departure transfers at Jeddah and Madinah airports",
+          "intercity": "Makkah, Madinah and Jeddah, in either direction, at the times you set",
+          "fleet": "GMC, Hiace, minibus and coach, chosen for the size of the group",
+          "ziyaratRuns": "Vehicles held for ziyarat days and local movement",
+          "drivers": "Drivers briefed on the itinerary before the group lands"
+        }
+      },
+
+      "rail": {
+        "lead": "Seats on the Haramain High-Speed Rail between Makkah, Jeddah and Madinah, booked together for the group and coordinated with the transfers waiting at each end.",
+        "points": {
+          "routes": "Makkah, Jeddah and Madinah stations, in both directions",
+          "groupTickets": "Group tickets booked as one block where seats allow",
+          "stationTransfers": "Transfers to and from the station, timed to the train",
+          "timings": "Guidance on timings, luggage and what to expect at the station",
+          "operator": "Fares, seats and timetables are set by the rail operator — we book against what is open"
+        }
+      },
+
+      "ziyarat": {
+        "lead": "Guided visits to the historical and religious sites of Madinah and Makkah, with experienced guides and vehicles sized to the group.",
+        "points": {
+          "madinahSites": "Madinah — Quba, Uhud, Masjid al-Qiblatain and the surrounding sites",
+          "makkahSites": "Makkah — Mina, Arafat, Muzdalifah, Jabal al-Nour and Jabal Thawr",
+          "guides": "Guides who know the sites and the etiquette expected at each",
+          "halfOrFullDay": "Half-day or full-day routes, for a family or for a full coach"
+        }
+      },
+
+      "permits": {
+        "lead": "Permits for Hajj, Umrah and specific sites are issued by the Saudi authorities through their own official channels. What we do is help you through that process: explaining which permits your itinerary needs, what each application asks for, and how to submit it correctly. The decision is always the authorities'.",
+        "points": {
+          "whichPermits": "Guidance on which permits your itinerary needs, and which it does not",
+          "documents": "Help preparing the information and documents an application asks for",
+          "application": "Step-by-step support completing the application on the official platform",
+          "timing": "Guidance on when to start, and what the process usually involves",
+          "outcome": "Help understanding the result of an application, and reapplying if you choose to"
+        },
+        "note": "Permits are issued only by the official Saudi authorities, through their own channels. Our role is assistance, guidance and coordination with that process. We cannot obtain a permit on your behalf, we have no access to any official system that is not open to every applicant, and we cannot promise that any application will be approved."
+      },
+
+      "groundHandling": {
+        "lead": "One team on the ground from arrival to departure — meeting the group at the airport, running the hotel check-in, moving them between cities, and staying reachable for as long as they are in the Kingdom.",
+        "points": {
+          "meetAndAssist": "Meet and assist on arrival, with the transfer already waiting",
+          "checkIn": "Hotel check-in and check-out handled for the whole group",
+          "movement": "Movement between Makkah, Madinah and Jeddah on your schedule",
+          "namedCoordinator": "One named coordinator responsible for the file",
+          "reachable": "A contact reachable around the clock while the group is here",
+          "reporting": "The agency kept informed, without having to chase us"
+        }
+      }
+    },
+
+    "closing": {
+      "eyebrow": "Working with us",
+      "heading": "Tell us the dates and the group",
+      "body": "Send the city, the dates, the number of guests and the grade you have in mind. We will come back with what is available and what it costs.",
+      "contactCta": "All contact details"
+    }
+  },
+
+  "b2b": {
+    "meta": {
+      "title": "B2B partnership",
+      "description": "Al Haramain Reservation is the B2B division of Nusuk Help: hotels, transport, rail, ziyarat and ground handling in Saudi Arabia for travel agencies, with wholesale rates and confidential documentation."
+    },
+
+    "eyebrow": "For travel agencies",
+    "title": "A partner on the Saudi side of the journey",
+    "lead": "Al Haramain Reservation is the B2B division of Nusuk Help. You sell the pilgrimage; we handle what happens once your group lands — hotels, transport, rail, ziyarat and ground handling, run by our own team from Madinah.",
+    "cta": "Start a B2B enquiry",
+    "servicesCta": "See all reservation services",
+
+    "handle": {
+      "eyebrow": "What we handle",
+      "heading": "Six services, one partner",
+      "intro": "Everything below is arranged and operated by us inside the Kingdom. Each one links to the full detail."
+    },
+
+    "process": {
+      "eyebrow": "How it works",
+      "heading": "From brief to boarding",
+
+      "steps": {
+        "brief": {
+          "title": "Send us the brief",
+          "body": "Dates, city, group size, hotel grade and anything specific your client has asked for. WhatsApp is enough — there is no portal to learn."
+        },
+        "options": {
+          "title": "We come back with options",
+          "body": "What is genuinely available on those dates, with alternatives where a property is full, and a price against each. We are not an availability engine; a person checks."
+        },
+        "confirm": {
+          "title": "You confirm",
+          "body": "We hold the booking, issue the documentation, and coordinate the details with the hotels and suppliers on your behalf."
+        },
+        "operate": {
+          "title": "We run it on the ground",
+          "body": "Arrival, transfers, check-in and movement between cities, with one named contact responsible for the file from first enquiry to check-out."
+        }
+      }
+    },
+
+    "benefits": {
+      "eyebrow": "What a partnership gives you",
+      "heading": "Built around how agencies actually work"
+    },
+
+    "confidential": {
+      "eyebrow": "Documentation",
+      "heading": "A document your client can see",
+      "body": "Every booking can be issued two ways: a full invoice for your own accounts, and a confidential copy with all amounts removed. Your client gets a document that confirms the booking, the hotel and the dates — and shows them nothing about what you paid us.",
+      "note": "Both are generated from the same booking, so they can never disagree about the dates, the rooms or the guests."
+    },
+
+    "closing": {
+      "eyebrow": "Become our partner",
+      "heading": "Send us your next group",
+      "body": "Tell us what you are working on — the city, the dates and the group. If we can cover it, we will come back with options; if we cannot, we will say so.",
+      "contactCta": "All contact details"
+    }
+  },
+
+  "about": {
+    "meta": {
+      "title": "About us",
+      "description": "Nusuk Help is an independent Hajj and Umrah services company based in Madinah Al Munawarah, with a B2B reservation and ground-handling division, Al Haramain Reservation."
+    },
+
+    "eyebrow": "About us",
+    "title": "An independent company, based in Madinah",
+    "lead": "Nusuk Help helps pilgrims prepare for Hajj and Umrah, and handles the Saudi side of the journey for travel agencies abroad. We work from Madinah Al Munawarah — which is the difference between arranging a trip and being there when it happens.",
+
+    "mission": {
+      "eyebrow": "What we are for",
+      "heading": "Make the Saudi side of the journey straightforward",
+      "bodyOne": "Most of what goes wrong on a pilgrimage goes wrong on the ground: a hotel further from the Haram than the brochure suggested, a transfer that does not arrive, a permit application started too late. Those are local problems, and they are solved locally.",
+      "bodyTwo": "So the company is built around being here. We arrange the rooms, the vehicles, the rail seats and the ziyarat routes ourselves, we guide people through the official permit process, and we stay reachable while a group is in the Kingdom. For an agency, that means one partner instead of five suppliers in a country it cannot visit."
+    },
+
+    "facts": {
+      "base": {
+        "label": "Based in",
+        "value": "Madinah Al Munawarah, Saudi Arabia"
+      },
+      "structure": {
+        "label": "Structure",
+        "value": "One company, two divisions — Nusuk Help for pilgrims, Al Haramain Reservation for agencies"
+      },
+      "coverage": {
+        "label": "Where we operate",
+        "value": "Makkah, Madinah and Jeddah, and elsewhere in the Kingdom on request"
+      },
+      "desks": {
+        "label": "Desks",
+        "value": "Saudi Arabia and Bangladesh, for groups travelling from South Asia"
+      }
+    },
+
+    "independence": {
+      "eyebrow": "Independence",
+      "heading": "Who we are not",
+      "body": "Our name describes what we help people with — the Nusuk platform — not who we are. We are a private company. We are not an official body, and permits, approvals and platform decisions are matters for the Saudi authorities alone. Where we help with an application, we do it through the same official channels that are open to everyone."
+    },
+
+    "closing": {
+      "eyebrow": "Get in touch",
+      "heading": "Talk to a person",
+      "body": "Whether you are planning your own Umrah or moving a group of two hundred, the first step is the same: tell us what you need.",
+      "contactCta": "All contact details"
+    }
+  },
+
+  "privacy": {
+    "meta": {
+      "title": "Privacy policy",
+      "description": "How Nusuk Help handles the information you send through this website — reviews, enquiries and messages."
+    },
+
+    "eyebrow": "Legal",
+    "title": "Privacy policy",
+    "lead": "This policy explains what this website collects, why, and what happens to it. It describes what the site actually does rather than trying to cover every eventuality, and it will be revised as the site grows.",
+
+    "sections": {
+      "scope": {
+        "title": "What this policy covers",
+        "body": "This policy covers nusukhelp.com, the public website. It does not cover the private booking system our staff use, or what happens after you become a client — that is governed by the terms issued with your booking."
+      },
+      "collect": {
+        "title": "What we collect",
+        "body": "The website has no accounts and no login. We hold only what you choose to send us, plus the technical data any website receives.",
+        "bullets": {
+          "reviews": "If you submit a review: your name, your email address, your country, a rating and your comment. The email address lets us contact you about the review if we need to — it is stored, and it is never published.",
+          "enquiries": "If you send an enquiry: your name, email address, phone number if you give one, company if you give one, whether you are writing as a pilgrim or as an agency, and your message.",
+          "messages": "If you message us on WhatsApp or by email, we keep what you send so we can answer it and refer back to it.",
+          "technical": "Technical data: your request is handled by Cloudflare, which records standard server and security information. We store a one-way hash of your IP address alongside a review or enquiry to limit spam — not the address itself."
+        }
+      },
+      "use": {
+        "title": "What we use it for",
+        "body": "Four things, and nothing else. We do not use your information for advertising, and we do not build profiles.",
+        "bullets": {
+          "reply": "To answer you, and to arrange what you have asked about.",
+          "publish": "To publish approved reviews. A published review shows the name and country you gave, your rating and your comment. Your email address is never shown, and is not present in the page or in any data behind it.",
+          "protect": "To protect the site from spam and abuse — this is what the bot check and the IP hash are for.",
+          "records": "To keep an ordinary business record of enquiries and bookings."
+        }
+      },
+      "legalBasis": {
+        "title": "Why we hold it",
+        "body": "You give it to us so that we can respond, and that is the basis for everything above. Publishing a review rests on the consent you give when you submit it, and you can withdraw that at any time."
+      },
+      "sharing": {
+        "title": "Who else sees it",
+        "body": "We do not sell information and we do not share it for advertising. A small number of providers process it on our behalf:",
+        "bullets": {
+          "hosting": "Cloudflare — hosting, content delivery, and the bot check on our forms.",
+          "email": "Resend — delivering notification and confirmation emails.",
+          "never": "Nobody else, except where passing a detail on is necessary to arrange something you have specifically asked us to arrange — a hotel booking in your name, for instance."
+        }
+      },
+      "cookies": {
+        "title": "Cookies",
+        "body": "This site sets no advertising or analytics cookies. Your language choice is carried in the address of the page rather than in a cookie. Cloudflare's security and bot-check services may set strictly necessary cookies; those exist to keep the site available, not to follow you around other sites."
+      },
+      "retention": {
+        "title": "How long we keep it",
+        "body": "Enquiries and messages are kept while they remain useful to running the business — an old enquiry is often the context for a later booking. Published reviews stay until you or we remove them. If you would like something deleted, ask, and we will delete it unless we are required to keep it."
+      },
+      "rights": {
+        "title": "What you can ask for",
+        "body": "Write to us at the address at the end of this page and we will act on any of the following.",
+        "bullets": {
+          "access": "A copy of what we hold about you.",
+          "correct": "A correction to anything that is wrong.",
+          "remove": "Deletion of your enquiry, your message or your published review.",
+          "withdraw": "Withdrawal of consent to publish a review, which takes it off the site."
+        }
+      },
+      "security": {
+        "title": "How it is kept",
+        "body": "The site is served over HTTPS, so what you send is encrypted in transit. Stored information sits in our database on Cloudflare's infrastructure and is reachable only through the private admin system, which is invitation-only and has no public sign-up."
+      },
+      "children": {
+        "title": "Children",
+        "body": "This website is intended for adults arranging travel. We do not knowingly collect information from children. If a child has sent us something, tell us and we will remove it."
+      },
+      "changes": {
+        "title": "Changes",
+        "body": "We will update this page when what we do changes, and the date at the top will change with it. This is an early version and will be revised."
+      },
+      "contactUs": {
+        "title": "Contact",
+        "body": "Questions about this policy, or a request about your own information: write to {email} or call {phone}."
+      }
+    }
+  },
+
+  "terms": {
+    "meta": {
+      "title": "Terms & conditions",
+      "description": "The terms that apply to using the Nusuk Help website, and how they relate to the booking terms issued with a confirmed reservation."
+    },
+
+    "eyebrow": "Legal",
+    "title": "Terms & conditions",
+    "lead": "These terms cover the use of this website. The terms that govern an actual booking are issued with your confirmation and printed on your invoice, and those are the ones that apply to the reservation itself.",
+
+    "sections": {
+      "who": {
+        "title": "Who these terms are from",
+        "body": "This website is operated by Nusuk Help, a travel services company based in Madinah Al Munawarah, Saudi Arabia. Al Haramain Reservation is its B2B division. Using the site means accepting the terms on this page."
+      },
+      "services": {
+        "title": "What we do",
+        "body": "We arrange hotels, transport, Haramain rail seats, ziyarat and ground handling with hotels and suppliers, and we assist with the official permit process. We are not a hotel, a carrier, a rail operator or a government body, and this site is not a booking engine — nothing on it books anything. A reservation exists only once we have confirmed it to you in writing."
+      },
+      "permits": {
+        "title": "Permit assistance",
+        "body": "Permits are issued by the Saudi authorities through their own official channels, and the decision is always theirs. Our role is assistance, guidance and coordination with that process: explaining what is required, helping prepare an application, and supporting you through it. We cannot obtain a permit on your behalf, we have no access to any official system that is not open to every applicant, and no application's approval can be promised."
+      },
+      "independence": {
+        "title": "Independence",
+        "body": "We are an independent company. Nothing on this site should be read as a claim to act for, or with the authority of, any official body."
+      },
+      "information": {
+        "title": "Information on this site",
+        "body": "Descriptions, service lists and any prices shown here are for information. They are not an offer, and they are subject to availability. Rates, rooms, seats and timings are confirmed for your dates at the time of booking, and can change until they are confirmed."
+      },
+      "bookingTerms": {
+        "title": "The terms that govern a booking",
+        "body": "These website terms are not the booking terms. When a reservation is confirmed, the booking terms in force at that moment are issued with the confirmation and printed in full on the invoice, and those are the ones that apply to the reservation. Ask us for the current version at any time. They cover, among other things:",
+        "bullets": {
+          "payment": "Payment and confirmation, including what must be paid before a booking is finally confirmed.",
+          "cancellation": "Cancellation, amendment and refund, which follow the relevant hotel or supplier policy.",
+          "hotel": "Hotel policies — check-in and check-out times, occupancy, meals, deposits and extras.",
+          "liability": "What happens when a hotel, supplier, authority or transport operator causes a change outside our control."
+        }
+      },
+      "reviews": {
+        "title": "Reviews",
+        "body": "Reviews are checked before they appear, and we may decline or remove one. Submit only your own honest experience, and nothing unlawful, abusive, or identifying of another person. By submitting a review you allow us to publish your name, country, rating and comment on this site; your email address is never published. Ask us and we will remove your review."
+      },
+      "content": {
+        "title": "Content and marks",
+        "body": "The text, images, layout and marks on this site — including the Nusuk Help and Al Haramain Reservation names and logos — belong to us or are used with permission. Please do not reproduce them without asking. Any third-party names mentioned belong to their respective owners."
+      },
+      "liability": {
+        "title": "Liability",
+        "body": "We take care over what is published here, but we do not warrant that it is complete or current, and the site is provided as it is. To the extent the law allows, we are not liable for loss arising from use of this website. Nothing here limits any liability that cannot lawfully be limited, and nothing here affects the terms that govern a confirmed booking."
+      },
+      "law": {
+        "title": "Governing law",
+        "body": "These terms are governed by the laws of the Kingdom of Saudi Arabia."
+      },
+      "changes": {
+        "title": "Changes",
+        "body": "We may update these terms, and the date at the top will change when we do. This is an early version and will be revised."
+      },
+      "contactUs": {
+        "title": "Contact",
+        "body": "Questions about these terms: write to {email} or call {phone}."
+      }
     }
   }
 }
