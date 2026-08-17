@@ -16,19 +16,23 @@
  */
 
 /* --------------------------------------------------------------------------
-   No icon field — deliberately, decided in Phase 4.
+   Icons — restored in Phase 4b (§7, texture amendment).
 
-   §5 calls the why-choose-us points "icon-led", but the prototypes draw no
-   icons anywhere on this page. Every card and point is led by a short brass
-   hairline instead (`prototype/02-landing-desktop.svg`: a 58px rule across the
-   top-start corner of each card, 34px above each why-choose-us point). That is
-   the design language §7 asks for — "hairline rules, 2px radius, no drop
-   shadows" — and an icon set would be a second visual system competing with
-   the ogee arch for attention.
+   The field was dropped in Phase 4 because nothing rendered it and the
+   prototypes draw no icons. It is back because the glyphs now exist and render:
+   a set drawn for this project in `components/ui/brand-icons.tsx`, sharing the
+   ogee curve and the square-Kufic right angles rather than importing a generic
+   icon library.
 
-   An `IconName` union carried through Phase 4 unrendered would be exactly the
-   flexibility we agreed not to pre-pay for. If icons are ever commissioned,
-   the field is one line per entry to add back.
+   The `id` *is* the glyph name — `BrandIconName` is built from `ServiceId` plus
+   the why-choose-us and coverage ids, so a new entry without a matching glyph
+   is a compile error rather than a blank square on the page. That is why there
+   is no separate `icon` string to keep in sync.
+
+   The brass hairline stays above each card; the icon sits with it and does not
+   replace it.
+
+   `headOffice` stays dropped — still nothing renders it.
    -------------------------------------------------------------------------- */
 
 /* --------------------------------------------------------------------------

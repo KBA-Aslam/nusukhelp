@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 
 import { Bidi } from '@/components/ui/bidi';
+import { KuficPattern } from '@/components/ui/kufic-pattern';
 import { whatsappUrl } from '@/lib/site';
 
 import { ButtonLink } from './cta';
@@ -32,8 +33,16 @@ export function FreeConsultation() {
   const tWhatsapp = useTranslations('whatsapp');
 
   return (
-    <section className="bg-pine" aria-labelledby="consultation-heading">
-      <div className={`${CONTAINER} py-14 lg:py-20`}>
+    <section
+      className="relative isolate overflow-hidden bg-pine"
+      aria-labelledby="consultation-heading"
+    >
+      {/* Kufic lattice — the first of the two surfaces §7 permits it on. The
+          panel below is opaque, so every string in this block sits on a clean
+          ground; the pattern shows in the band around it. */}
+      <KuficPattern id="consultation" ink="var(--color-gilt)" opacity={0.06} />
+
+      <div className={`relative ${CONTAINER} py-14 lg:py-20`}>
         <div className="rounded-[2px] bg-panel-deep px-6 py-12 text-center sm:px-12 lg:py-16">
           <p className="font-sans text-[0.6875rem] font-semibold tracking-[0.24em] text-gilt uppercase">
             <Bidi>{t('eyebrow')}</Bidi>

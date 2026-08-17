@@ -440,6 +440,64 @@ The **ogee arch** from the dome in the Nusuk Help mark is the one bold device. I
 
 See `prototype/01-design-system.svg` for the full specimen sheet.
 
+### Texture amendment — Phase 4b
+
+The landing page as first built read **sparse rather than considered**. "Spend
+boldness once" was guidance against generic template design, not an argument for
+austerity, and it was applied too literally. Four additions, all texture
+*beneath* the signature rather than competing with it. Nothing in *Structure*
+above is relaxed: no drop shadows, 2px radius, hairline rules, restrained
+motion, AA contrast everywhere.
+
+**1. Custom icon set — restored.** `content/services.ts` carries an `icon` field
+again on services, why-choose-us points and coverage areas, and the glyphs
+render. They are **drawn for this project**, not taken from an icon library: a
+17-glyph monoline set in `components/ui/brand-icons.tsx`, ~28px, sharing the
+ogee curve and the square-Kufic right angles already established — a
+crescent-arch for hotels, a Kaaba silhouette for Makkah, a dome for Madinah, an
+inverted ogee as the map pin. Brass on light grounds, gilt on dark, via
+`currentColor`.
+
+The brass hairline **stays** above each card. The icon sits with the rule; it
+does not replace it.
+
+> This reverses the Phase 4 ruling in §5 that dropped the `icon` field. That
+> ruling was correct about not pre-paying for flexibility — the field was
+> unrendered at the time — and is superseded now that the glyphs exist and
+> render. The `headOffice` field stays dropped; nothing renders it.
+
+**2. Hero photography.** The hero panel takes a photograph of Haram or Madinah
+architecture behind the ogee mask, heavily tinted toward `--ink` so the display
+type over it still clears AA. The flat `--panel` block remains the fallback and
+the placeholder until a licensed image is chosen — see §19 item 6, which this
+does not close.
+
+**3. Geometric pattern — two permitted surfaces.** A tiling square-Kufic lattice
+derived from the grid in the Al Haramain mark — not a stock arabesque — at an
+opacity low enough that no text contrast is affected. Permitted on exactly two
+surfaces:
+
+| Surface | Ground | Pattern ink |
+|---|---|---|
+| Behind the free-consultation block | `--pine` | `--gilt` |
+| Behind the coverage section | `--sand` | `--brass` |
+
+Anywhere else is a third surface and needs a decision, not a commit. The
+measured contrast for every text colour that sits over these grounds is recorded
+in `components/ui/kufic-pattern.tsx`.
+
+**4. Coverage cards.** Each city card carries its icon plus a low-opacity ogee
+arch motif, so the four read as a set with individual identity rather than four
+identical boxes.
+
+> This reverses the Phase 4 ruling that removed the arch from the coverage
+> cards. **The arch is now a three-surface device** — hero mask, two-division
+> card outlines, coverage cards — where *Structure* above says "and appears
+> nowhere else". That sentence is amended by this section, deliberately and
+> with the trade-off understood: each further surface costs the arch some of
+> its force as a signature. Three is the ceiling. A fourth needs a conversation
+> about the design language, not a component change.
+
 ### Quality floor
 
 Responsive to 360 px. Visible keyboard focus. WCAG AA contrast. Alt text throughout. Reduced motion respected.

@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 
 import { Bidi } from '@/components/ui/bidi';
+import { BrandIcon } from '@/components/ui/brand-icons';
 import { SERVICES } from '@/content/services';
 import { Link } from '@/i18n/navigation';
 
@@ -44,7 +45,10 @@ export function ServicesGrid() {
               className="group flex h-full flex-col rounded-[2px] border border-hairline bg-white p-6 transition-colors hover:border-brass sm:p-7"
             >
               <LeadRule tone="sand" />
-              <h3 className="mt-5 font-display text-xl text-ink">
+              <span className="mt-4 block text-brass transition-colors group-hover:text-brass-ink">
+                <BrandIcon name={service.id} />
+              </span>
+              <h3 className="mt-4 font-display text-xl text-ink">
                 <Bidi>{t(`items.${service.id}.title`)}</Bidi>
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-slate">
@@ -65,7 +69,10 @@ export function ServicesGrid() {
       {feature ? (
         <div className="mt-6 rounded-[2px] bg-ink p-7 sm:p-9 lg:flex lg:items-center lg:justify-between lg:gap-10">
           <div>
-            <p className="font-sans text-[0.6875rem] font-semibold tracking-[0.24em] text-gilt uppercase">
+            <p className="flex items-center gap-3 font-sans text-[0.6875rem] font-semibold tracking-[0.24em] text-gilt uppercase">
+              <span className="text-gilt">
+                <BrandIcon name={feature.id} className="h-6 w-6" />
+              </span>
               <Bidi>{t('items.b2b.eyebrow')}</Bidi>
             </p>
             <h3 className="mt-3 font-display text-2xl text-white sm:text-[1.625rem]">

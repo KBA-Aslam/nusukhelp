@@ -58,21 +58,31 @@ export function Section({
   id,
   labelledBy,
   children,
+  backdrop,
   className = '',
 }: {
   tone: Tone;
   id?: string;
   labelledBy?: string;
   children: ReactNode;
+  /**
+   * A decorative layer behind the content — the Kufic lattice, on the two
+   * surfaces §7 permits it. Rendered under the container, so anything the
+   * content paints on top of it (an opaque card, an opaque heading block) hides
+   * it. That layering is what keeps text off the pattern; see
+   * `kufic-pattern.tsx` for the contrast measurements that forced it.
+   */
+  backdrop?: ReactNode;
   className?: string;
 }) {
   return (
     <section
       id={id}
       aria-labelledby={labelledBy}
-      className={`${GROUND[tone]} ${className}`}
+      className={`relative isolate overflow-hidden ${GROUND[tone]} ${className}`}
     >
-      <div className={`${CONTAINER} py-14 lg:py-20`}>{children}</div>
+      {backdrop}
+      <div className={`relative ${CONTAINER} py-14 lg:py-20`}>{children}</div>
     </section>
   );
 }

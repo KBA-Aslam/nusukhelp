@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 
 import { Bidi } from '@/components/ui/bidi';
+import { BrandIcon } from '@/components/ui/brand-icons';
 import { WHY_CHOOSE_US } from '@/content/services';
 
 import { LeadRule, Section, SectionHeading } from './section';
@@ -29,6 +30,9 @@ export function WhyChooseUs() {
         {WHY_CHOOSE_US.map((point) => (
           <li key={point.id}>
             <LeadRule tone="mist" width="w-8" />
+            <span className="mt-4 block text-brass">
+              <BrandIcon name={point.id} />
+            </span>
             <h3 className="mt-4 text-[1.0625rem] font-semibold text-ink">
               <Bidi>{t(`points.${point.id}.title`)}</Bidi>
             </h3>
