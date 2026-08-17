@@ -7,11 +7,17 @@
  * carries across tile edges, a square frame, a square centre — and nothing else.
  * No curves, no diagonals, no floral forms.
  *
- * ## Permitted on exactly two surfaces
+ * ## Permitted surfaces
  *
  * Behind the free-consultation block (gilt on pine) and behind the coverage
- * section (brass on sand). Anywhere else is a third surface and needs a
- * decision, not a commit.
+ * section (brass on sand). A third, **temporary** surface was added by
+ * decision: gilt at 0.14 inside the hero arch mask, so the empty photography
+ * placeholder reads as intentional rather than unfinished. It comes out when
+ * the photograph lands (§19 item 6). Anywhere else still needs a decision, not
+ * a commit.
+ *
+ * No text sits over any of the three, which is what the measurements below
+ * forced.
  *
  * ## Contrast — measured, and it changed the design
  *

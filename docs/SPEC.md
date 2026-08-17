@@ -458,8 +458,18 @@ crescent-arch for hotels, a Kaaba silhouette for Makkah, a dome for Madinah, an
 inverted ogee as the map pin. Brass on light grounds, gilt on dark, via
 `currentColor`.
 
-The brass hairline **stays** above each card. The icon sits with the rule; it
-does not replace it.
+**Content ids are the icon keys.** There is no `icon` field on the content
+entries. `BrandIconName` is derived as `ServiceId | WhyChooseUsId |
+CoverageAreaId` and the glyph map is a total `Record` over that union, so adding
+an entry to `SERVICES`, `WHY_CHOOSE_US` or `COVERAGE_AREAS` without drawing its
+glyph **fails the build** rather than rendering a blank square. A separate field
+would duplicate the id exactly and could drift from it. If a glyph ever needs to
+be shared by two entries, that is the moment to add the field — not before.
+
+**The per-card hairline is removed.** It was the lead device while there were no
+icons; with a glyph on every card it reads as leftover scaffolding. Hairline
+rules remain everywhere else they do real work — section dividers, the footer
+rule, the contact cards, which have no icon.
 
 > This reverses the Phase 4 ruling in §5 that dropped the `icon` field. That
 > ruling was correct about not pre-paying for flexibility — the field was
@@ -468,23 +478,40 @@ does not replace it.
 
 **2. Hero photography.** The hero panel takes a photograph of Haram or Madinah
 architecture behind the ogee mask, heavily tinted toward `--ink` so the display
-type over it still clears AA. The flat `--panel` block remains the fallback and
-the placeholder until a licensed image is chosen — see §19 item 6, which this
-does not close.
+type over it still clears AA.
+
+**Licence route: Unsplash.** Chosen over Wikimedia Commons deliberately. The
+Commons candidates are CC BY-SA 4.0, and tinting and cropping a photograph makes
+a derivative that ShareAlike would require be released under a compatible
+licence — a standing obligation on a commercial site, plus a credit line to
+maintain. The Unsplash licence permits commercial use with no attribution and no
+ShareAlike; its two prohibitions (reselling unmodified images, building a
+competing stock service) do not apply here. **The client is sourcing the
+photograph themselves** — do not pick one.
+
+Until it lands the panel carries the Kufic lattice inside the arch mask rather
+than a flat fill, so it reads as intentional rather than unfinished. §19 item 6
+stays open; the lattice comes out when the photograph goes in.
 
 **3. Geometric pattern — two permitted surfaces.** A tiling square-Kufic lattice
 derived from the grid in the Al Haramain mark — not a stock arabesque — at an
 opacity low enough that no text contrast is affected. Permitted on exactly two
 surfaces:
 
-| Surface | Ground | Pattern ink |
-|---|---|---|
-| Behind the free-consultation block | `--pine` | `--gilt` |
-| Behind the coverage section | `--sand` | `--brass` |
+| Surface | Ground | Pattern ink | Status |
+|---|---|---|---|
+| Behind the free-consultation block | `--pine` | `--gilt` | permanent |
+| Behind the coverage section | `--sand` | `--brass` | permanent |
+| Inside the hero arch mask | `--panel` | `--gilt` | **placeholder only** |
 
-Anywhere else is a third surface and needs a decision, not a commit. The
-measured contrast for every text colour that sits over these grounds is recorded
-in `components/ui/kufic-pattern.tsx`.
+The third surface was added by decision, which is the process this section
+requires — anywhere else still needs a decision, not a commit. It is
+**temporary**: the lattice inside the arch is there so the empty panel reads as
+intentional rather than unfinished, and it comes out when the photograph lands.
+No text sits over any of the three.
+
+The measured contrast for every text colour that sits over these grounds is
+recorded in `components/ui/kufic-pattern.tsx`.
 
 **4. Coverage cards.** Each city card carries its icon plus a low-opacity ogee
 arch motif, so the four read as a set with individual identity rather than four

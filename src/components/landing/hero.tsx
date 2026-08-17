@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 
 import { Bidi } from '@/components/ui/bidi';
+import { KuficPattern } from '@/components/ui/kufic-pattern';
 import {
   HERO_PANEL_ASPECT,
   OgeeArchClipDefs,
@@ -95,11 +96,23 @@ export function Hero() {
           </ArrowLink>
         </div>
 
-        {/* Photography placeholder — open item 6. */}
+        {/* Photography placeholder — §19 open item 6, still open.
+            The client is sourcing the photograph under the Unsplash licence
+            (§7). Until it lands the panel carries the Kufic lattice inside the
+            mask rather than a flat fill, so the arch reads as intentional
+            rather than unfinished. This is the third and temporary pattern
+            surface: it comes out when the image goes in, and no text sits over
+            it in either layout. */}
         <div
           className={`relative mx-auto w-full max-w-[17rem] sm:max-w-[21.5rem] lg:mx-0 lg:w-[26.875rem] ${HERO_PANEL_ASPECT}`}
         >
-          <OgeeArchMask className="h-full w-full bg-panel" />
+          <OgeeArchMask className="relative h-full w-full overflow-hidden bg-panel">
+            <KuficPattern
+              id="hero"
+              ink="var(--color-gilt)"
+              opacity={0.14}
+            />
+          </OgeeArchMask>
           <OgeeArchPanelOutline className="absolute inset-0 h-full w-full" />
         </div>
       </div>

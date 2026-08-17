@@ -136,12 +136,17 @@ export function SectionHeading({
 }
 
 /**
- * The short brass rule that leads every card and point on this page.
+ * A short brass rule as a card's lead device.
  *
- * This is the page's answer to §5's "icon-led": the prototype draws no icons,
- * it draws a 58px hairline across the top-start corner of each card and a 34px
- * rule above each why-choose-us point. Decorative, so it is never the only
- * thing distinguishing one item from another.
+ * **Narrowed in Phase 4b.** It used to lead every card and point on this page,
+ * standing in for the icons §5 asked for and the prototypes never drew. Now
+ * that a glyph leads each service card, why-choose-us point and coverage card,
+ * the rule above them read as leftover scaffolding and was removed. It survives
+ * on the contact cards, which have no icon, and hairline rules go on doing
+ * their other work — section dividers, the footer rule, card borders.
+ *
+ * Decorative, so it is never the only thing distinguishing one item from
+ * another.
  */
 export function LeadRule({
   tone,

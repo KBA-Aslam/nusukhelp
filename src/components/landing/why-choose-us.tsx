@@ -4,7 +4,7 @@ import { Bidi } from '@/components/ui/bidi';
 import { BrandIcon } from '@/components/ui/brand-icons';
 import { WHY_CHOOSE_US } from '@/content/services';
 
-import { LeadRule, Section, SectionHeading } from './section';
+import { Section, SectionHeading } from './section';
 
 /**
  * §5 item 5 — six points on a mist band.
@@ -29,8 +29,7 @@ export function WhyChooseUs() {
       <ul className="mt-10 grid gap-8 sm:grid-cols-2 lg:mt-14 lg:grid-cols-3 lg:gap-x-10 lg:gap-y-12">
         {WHY_CHOOSE_US.map((point) => (
           <li key={point.id}>
-            <LeadRule tone="mist" width="w-8" />
-            <span className="mt-4 block text-brass">
+            <span className="block text-brass">
               <BrandIcon name={point.id} />
             </span>
             <h3 className="mt-4 text-[1.0625rem] font-semibold text-ink">

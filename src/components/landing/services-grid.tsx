@@ -6,7 +6,7 @@ import { SERVICES } from '@/content/services';
 import { Link } from '@/i18n/navigation';
 
 import { ButtonLink } from './cta';
-import { LeadRule, Section, SectionHeading } from './section';
+import { Section, SectionHeading } from './section';
 
 /**
  * §5 item 4 — the services grid. Seven cards off `content/services.ts`.
@@ -44,11 +44,10 @@ export function ServicesGrid() {
               href={service.href}
               className="group flex h-full flex-col rounded-[2px] border border-hairline bg-white p-6 transition-colors hover:border-brass sm:p-7"
             >
-              <LeadRule tone="sand" />
-              <span className="mt-4 block text-brass transition-colors group-hover:text-brass-ink">
+              <span className="block text-brass transition-colors group-hover:text-brass-ink">
                 <BrandIcon name={service.id} />
               </span>
-              <h3 className="mt-4 font-display text-xl text-ink">
+              <h3 className="mt-5 font-display text-xl text-ink">
                 <Bidi>{t(`items.${service.id}.title`)}</Bidi>
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-slate">

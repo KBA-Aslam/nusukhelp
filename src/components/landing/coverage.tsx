@@ -6,7 +6,7 @@ import { KuficPattern } from '@/components/ui/kufic-pattern';
 import { OgeeArchOutline } from '@/components/ui/ogee-arch';
 import { COVERAGE_AREAS } from '@/content/services';
 
-import { LeadRule, Section, SectionHeading } from './section';
+import { Section, SectionHeading } from './section';
 
 /**
  * §5 item 6 — coverage. Four areas, "the core B2B differentiator".
@@ -66,8 +66,7 @@ export function Coverage() {
             />
 
             <div className="relative">
-              <LeadRule tone="sand" width="w-8" />
-              <span className="mt-4 block text-brass">
+              <span className="block text-brass">
                 <BrandIcon name={area.id} />
               </span>
               <h3 className="mt-4 font-display text-lg text-ink">
