@@ -1388,6 +1388,16 @@ Two consequences worth remembering:
 - **Never seed the local database with sample reviews.** Whatever is in local
   D1 at build time is baked into the deployed HTML until the first
   revalidation. Test rows must be deleted before building.
+- **Every deploy is preceded by confirming local `reviews` is empty.** This is
+  a required pre-deploy step, not a caution: a stale local row ships as real
+  content on the live site and stays there until a revalidation replaces it.
+  A review nobody wrote, presented as a customer's words, is a worse failure
+  than an empty band.
+
+  ```bash
+  npx wrangler d1 execute nusukhelp-db --local \
+    --command "SELECT COUNT(*) FROM reviews;"   # must be 0 before `npm run deploy`
+  ```
 - The public query lives in `src/db/queries/reviews.ts` and returns
   `PublicReview`, a type with **no email field at all** — the same
   allow-list discipline as the confidential invoice in §10, so a reviewer's

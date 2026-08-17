@@ -25,6 +25,13 @@ const LANDING_REVIEW_COUNT = 3;
  * whose reviews band is empty — and with nothing but on-demand revalidation it
  * would stay empty until the next approval, which could be weeks. An hourly
  * window costs one Worker invocation per hour per locale and closes that gap.
+ *
+ * **Verified end to end, not assumed.** With this window temporarily set to
+ * 60s: a row inserted directly into *remote* D1 was absent from the live page
+ * immediately after the insert (cached), and present 40 seconds later without
+ * a deploy. So a Worker re-render reads the production binding, and the
+ * backstop does what it claims. Cleanup order matters — delete the remote row
+ * *before* redeploying, because a deploy re-prerenders from local D1.
  */
 export const revalidate = 3600;
 
