@@ -65,10 +65,32 @@ export async function verifyTurnstile({
 
   try {
     const response = await fetch(SITEVERIFY_URL, { method: 'POST', body });
-    if (!response.ok) return false;
 
-    const result = (await response.json()) as { success?: boolean };
-    return result.success === true;
+    // The body is parsed whatever the status. Cloudflare answers a malformed
+    // verification with **400 and a meaningful body** — `invalid-input-secret`
+    // arrives that way, not as a 200 carrying `success: false` — so returning
+    // early on `!response.ok` would discard the one field that says what is
+    // wrong. That is not hypothetical: it hid a bad `TURNSTILE_SECRET_KEY`
+    // behind a generic rejection until the secret was verified by hand.
+    const result = (await response.json().catch(() => null)) as {
+      success?: boolean;
+      'error-codes'?: string[];
+    } | null;
+
+    if (result?.success === true) return true;
+
+    // Cloudflare's own reason, for `wrangler tail`. **Codes only** — never the
+    // secret, never the token. Without this line a rejected submission is
+    // indistinguishable from a misconfigured one, and the two need opposite
+    // responses: `invalid-input-response` is the guard doing its job, whereas
+    // `invalid-input-secret` means every genuine submitter is being turned
+    // away and nobody would find out until someone complained.
+    console.error(
+      `turnstile verification failed: ${response.status} ${(
+        result?.['error-codes'] ?? ['unparseable response']
+      ).join(', ')}`,
+    );
+    return false;
   } catch {
     // A network failure reaching Cloudflare is not permission to skip the
     // check. The submitter sees a "try again" error, which is honest.

@@ -1856,7 +1856,7 @@ of that script once the translation lands.**
 
 **Phase 6 — Forms.** Turnstile, reviews API, enquiries API with audience split, notification email, WhatsApp CTAs. **Built after Phase 7**, which had shipped ahead of it. The three Phase 7 carry-overs are done: the `/reviews` route exists, it is in `PUBLIC_ROUTES` and therefore in the sitemap, and `challenges.cloudflare.com` is in `script-src` and `frame-src`. Rulings in §14.
 
-**Phase 7 — Launch prep.** SEO metadata, sitemap, JSON-LD, security headers, Lighthouse, accessibility, RTL QA. **Built and deployed, tagged `phase-7-seo`.** It shipped before Phase 6, so it was deliberately not tagged `v1.0-public`. With Phase 6 now built, go-live is the remaining open items marked *Go-live* in §19 — chiefly the Turnstile and Resend configuration in `docs/SECRETS.md`.
+**Phase 7 — Launch prep.** SEO metadata, sitemap, JSON-LD, security headers, Lighthouse, accessibility, RTL QA. **Built and deployed, tagged `phase-7-seo`.** It shipped before Phase 6, so it was deliberately not tagged `v1.0-public`. With Phase 6 now built, Release 1 is code-complete and carries the tag **`release-1-complete`**; `v1.0-public` stays reserved for the go-live commit (§19, *The go-live tag is reserved*). What remains is the open items marked *Go-live* in §19 — chiefly the Turnstile secret and the Resend domain in `docs/SECRETS.md`.
 
 ### Release 2 — Admin panel
 
@@ -1899,11 +1899,12 @@ of that script once the translation lands.**
 | ~~11~~ | ~~Delete the registrar's parked `A` records on the `nusukhelp.com` apex in Cloudflare DNS~~ | Client | — | **Done in Phase 1.** Records deleted, both custom domains attached and serving over HTTPS. See §3. |
 | 12 | Legal review of `/privacy` and `/terms` | Client | Go-live | The drafts written in Phase 5 — starting points, not finished documents |
 | ~~13~~ | ~~Phase 6 is unbuilt~~ | Build | — | **Done.** Forms, Turnstile, both endpoints and `/reviews` shipped; the navigation links now resolve. See §14 |
-| 17 | Create the Turnstile widget and set the three secrets — see `docs/SECRETS.md`. **Both forms are inert until this is done**, by design | Client | **Go-live** | Nothing; the forms show a visible "not configured" notice |
-| 18 | Verify **`send.nusukhelp.com`** as a sending domain in Resend, or the enquiry notification never arrives (enquiries are still stored). A subdomain, not the apex — apex verification wants an apex MX record, and the apex is reserved for real mailboxes. This is the standing rule for every sender, Phase 8's invite emails included | Client | Go-live | `notifications@send.nusukhelp.com` as the sender |
+| 17 | Set a **valid** `TURNSTILE_SECRET_KEY` — see `docs/SECRETS.md`. The widget exists and its **site key is deployed and working**: both forms render, and the widget returns *Success* against `nusukhelp.com`. The secret currently in Wrangler is not a valid Turnstile secret — the production Worker logs `turnstile verification failed: 400 invalid-input-secret` and **every submission is rejected 403**. Re-run `npx wrangler secret put TURNSTILE_SECRET_KEY` with the widget's *secret* key, not its site key. A secret takes effect immediately; no redeploy is needed | Client | **Go-live** | Nothing; both forms accept nothing until this is fixed |
+| 18 | Verify **`send.nusukhelp.com`** as a sending domain in Resend, or the enquiry notification never arrives (enquiries are still stored). A subdomain, not the apex — apex verification wants an apex MX record, and the apex is reserved for real mailboxes. This is the standing rule for every sender, Phase 8's invite emails included **Still unverified, and it cannot be tested until item 17 is fixed** — the enquiry endpoint verifies Turnstile before it ever reaches the notification, so a live submission is the only way to see Resend's real answer | Client | Go-live | `notifications@send.nusukhelp.com` as the sender |
 | 14 | Decide on Cloudflare's managed `robots.txt` — it prepends an AI-crawler block ahead of ours (see §17 below) | Client | Go-live | The combined file as served today; our `/admin` disallow is effective either way |
 | 15 | Decide on HSTS `preload` — a near-irreversible commitment for every future subdomain (§15) | Client | Go-live | `max-age=63072000; includeSubDomains`, no `preload` |
-| 16 | Turn `workers_dev` off in `wrangler.jsonc` — a second reachable hostname is duplicate content (§17). Deferred past Phase 7 deliberately: the preview URL is how each phase is verified over HTTPS, and canonicals mitigate it meanwhile | Build | Go-live, **after Phase 6** | `workers_dev: true` |
+| ~~16~~ | ~~Turn `workers_dev` off in `wrangler.jsonc`~~ | Build | — | **Done.** `workers_dev: false` is deployed. `nusukhelp.lazykba.workers.dev` now returns 404 — the hostname still resolves on Cloudflare's shared addresses, but no Worker is attached — while both custom domains serve 200. The preview URL was how every phase got verified over HTTPS, which is why it deliberately outlived Phase 7 |
+| 19 | **End-to-end verification of both public forms on the live site** — submit a review, confirm it stores as `pending`, confirm it is absent from `/reviews`, approve it, confirm it appears after revalidation, delete the test row; then the same for an enquiry including whether the Resend notification arrives. Blocked on item 17: with an invalid secret every submission is rejected before it reaches the database | Build | **Go-live** | The guards are separately proven — honeypot answers 200 and stores nothing, a malformed body is 400, and a valid body with no token is 403 |
 
 Item 1 now covers two things, and they go to the advisor **together**. The
 affiliation disclaimer is a legal statement, not marketing copy, and it is the
@@ -1948,6 +1949,23 @@ deploy — `www` and the `workers.dev` preview URL included, not just the apex.
 Deleting the two parked `A` records was the whole fix. Wrangler now owns the
 records for both hostnames; adding one by hand would reproduce the same
 breakage. See §3.
+
+### The go-live tag is reserved
+
+**`v1.0-public` is not to be used until the actual go-live commit**, after the
+items above have landed. Release 1 is code-complete — every phase from 1 to 7 is
+built and deployed — and the finished build is tagged **`release-1-complete`**,
+which describes what is in the tree without claiming a status the project has
+not reached. The site cannot go live while `/ar` serves English placeholder
+strings (item 5) and the WhatsApp number is a placeholder (item 3), so a tag
+saying "public" would be wrong in the one way a tag most needs to be right:
+other people navigate by it.
+
+This is the same rule that produced `phase-7-seo` rather than `v1.0-public`
+when Phase 6 was still unbuilt, generalised. A tag has to pass two tests — the
+work its name claims is genuinely in the tree, **and** the name does not assert
+a status the project has not reached. Prefer descriptive build-state names, and
+spend a go-live name once, at go-live.
 
 Two placeholder rules matter more than the rest:
 

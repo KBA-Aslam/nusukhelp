@@ -13,7 +13,7 @@ Cloudflare dashboard → **Turnstile** → *Add widget*.
 | Field | Value |
 |---|---|
 | Widget name | `nusukhelp.com` |
-| Hostnames | `nusukhelp.com`, `www.nusukhelp.com`, and `nusukhelp.lazykba.workers.dev` while `workers_dev` is still `true` in `wrangler.jsonc` |
+| Hostnames | `nusukhelp.com` and `www.nusukhelp.com`. The `nusukhelp.lazykba.workers.dev` preview URL was needed while `workers_dev` was `true`; it is now `false` (§19 item 16) and that hostname can be dropped from the widget |
 | Widget mode | **Managed** |
 
 It gives you two values. They are not interchangeable:
@@ -84,6 +84,34 @@ npm run deploy
 configured" notice and cannot be submitted.** That state is deliberate and
 loud: a build that forgets the key must produce a form that does not work,
 never one that silently accepts whatever a bot sends.
+
+### If the widget passes but the form still says "we could not verify"
+
+The two keys fail in different places, and this is what it looks like when the
+**secret** is wrong while the **site key** is right: the Turnstile widget shows
+*Success*, and `POST /api/reviews` still answers `403 rejected`. The widget only
+proves the site key and the hostname list are correct — it never touches the
+secret.
+
+Read the Worker log to see Cloudflare's own reason:
+
+```bash
+npx wrangler tail --format pretty
+```
+
+| Logged code | What it means |
+|---|---|
+| `invalid-input-secret` | The value in `TURNSTILE_SECRET_KEY` is not a Turnstile secret at all — most often the **site key** pasted into the secret slot, or a truncated paste. Re-run `wrangler secret put` with the widget's secret key |
+| `invalid-input-response` | The secret is fine; the token was missing, reused or expired. A token is single-use and valid for 300 seconds. This is also what a genuine bot produces — the guard working |
+| `timeout-or-duplicate` | The same token was submitted twice |
+
+Cloudflare returns `invalid-input-secret` as **HTTP 400 with a JSON body**, not
+as a `200` carrying `success: false`, which is why `verifyTurnstile` parses the
+body whatever the status — an early `!response.ok` return would throw away the
+one field that names the problem.
+
+A secret takes effect the moment `wrangler secret put` completes. Unlike the
+site key it is **not** baked into the build, so no redeploy is needed.
 
 ---
 

@@ -14,10 +14,12 @@
     "enabled": true
   },
 
-  // Build-phase preview URL on *.workers.dev. This exists so each phase can be
-  // verified over HTTPS before the custom domains are attached. Turn it off at
-  // go-live — a second reachable hostname is duplicate content (§17).
-  "workers_dev": true,
+  // The build-phase preview URL on *.workers.dev is now off (§19 item 16). It
+  // existed so each phase could be verified over HTTPS before the custom domains
+  // were attached; with Phase 6 shipped that job is done, and a second reachable
+  // hostname is duplicate content (§17). The site serves on the two custom
+  // domains below and nowhere else.
+  "workers_dev": false,
 
   // Custom domains (§3). Wrangler manages the proxied DNS records for both
   // hostnames; do not add A or CNAME records for them by hand.
