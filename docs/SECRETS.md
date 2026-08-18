@@ -89,12 +89,35 @@ never one that silently accepts whatever a bot sends.
 
 ## 4. Resend domain verification
 
-The notification sender is `notifications@nusukhelp.com` (`src/lib/email.ts`).
-Resend rejects an unverified `from` with a 403, which means enquiries would be
-stored but never notified.
+The notification sender is `notifications@send.nusukhelp.com`
+(`src/lib/email.ts`). Resend rejects an unverified `from` with a 403, which
+means enquiries would be stored but never notified.
 
-In the Resend dashboard, add `nusukhelp.com` as a domain and publish the DKIM
-and SPF records it gives you in Cloudflare DNS. Tracked as a §19 open item.
+In the Resend dashboard, add **`send.nusukhelp.com`** as the domain — not
+`nusukhelp.com` — and publish the records it gives you in Cloudflare DNS.
+
+### Why a subdomain, and why this is the rule for every future sender
+
+Two reasons, and the first is the binding one:
+
+1. **The apex MX stays free.** Verifying `nusukhelp.com` itself as a sending
+   domain wants an MX record on the apex, and the apex is reserved for real
+   mailboxes (`someone@nusukhelp.com`) the client intends to host later. Every
+   record Resend asks for attaches to `send.nusukhelp.com` instead, so the apex
+   is left alone.
+2. **Reputation isolation.** A deliverability problem with automated mail
+   cannot damage the domain the company's human correspondence goes out on.
+   Resend recommends a sending subdomain for exactly this reason.
+
+This applies to **every sender this project adds**, not just the enquiry
+notification — the Phase 8 staff invite emails send from the same subdomain.
+
+Resend shows the exact records when you add the domain; publish them verbatim
+in Cloudflare DNS, all on the `send` subdomain. Wrangler manages the DNS records
+for the two custom hostnames (§3) but not this one, so these are added by hand
+in the dashboard and will not conflict.
+
+Tracked as §19 open item 18.
 
 To confirm it works end to end, submit a real enquiry through `/contact` and
 watch the Worker log:

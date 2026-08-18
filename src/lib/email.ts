@@ -30,12 +30,21 @@ const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 /**
  * The notification sender.
  *
- * **This domain must be verified in Resend before anything sends** — an
- * unverified `from` is rejected with a 403 and the enquiry notification
- * silently stops arriving. Tracked in §19; it is a client action on the Resend
- * dashboard, not a code change.
+ * **A sending subdomain, not the apex, and this is a standing rule for every
+ * sender this project adds** — including the Phase 8 staff invite emails.
+ * Verifying `nusukhelp.com` itself as a sending domain requires an MX record on
+ * the apex, and the apex MX is reserved for real mailboxes
+ * (`someone@nusukhelp.com`) the client intends to host later. Putting the
+ * sending records on `send.` leaves the apex untouched, and it keeps automated
+ * mail's deliverability reputation separate from the domain the company's human
+ * correspondence goes out on — which is also what Resend itself recommends.
+ *
+ * **The subdomain must be verified in Resend before anything sends.** An
+ * unverified `from` is rejected with a 403 and the notification silently stops
+ * arriving. Setup is in `docs/SECRETS.md`; it is a DNS action, not a code
+ * change.
  */
-const FROM = 'Nusuk Help <notifications@nusukhelp.com>';
+const FROM = 'Nusuk Help <notifications@send.nusukhelp.com>';
 
 /** Where enquiries land. The company's published address (§1). */
 const TO = EMAIL;
