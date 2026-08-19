@@ -280,3 +280,104 @@ export const companySettings = sqliteTable('company_settings', {
   logoUrl: text('logo_url'),
   updatedAt: integer('updated_at').notNull(),
 });
+
+/* ---------- Agencies (repeat B2B clients) ----------
+
+   The one table in Phase 9 that holds data staff typed rather than data the
+   seed supplied, which is why it archives rather than deletes: an agency is
+   named on every booking it ever placed, and §13.8's profile is a history.
+   `isArchived` takes it out of the pickers without taking it out of the past.
+   ------------------------------------------------------------------------ */
+
+export const agencies = sqliteTable(
+  'agencies',
+  {
+    id: text('id').primaryKey(),
+    agencyName: text('agency_name').notNull(),
+    contactPerson: text('contact_person'),
+    mobile: text('mobile'),
+    whatsapp: text('whatsapp'),
+    email: text('email'),
+    country: text('country'),
+    address: text('address'),
+    notes: text('notes'),
+    isArchived: integer('is_archived', { mode: 'boolean' })
+      .notNull()
+      .default(false),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [
+    index('idx_agencies_name').on(t.agencyName),
+    index('idx_agencies_contact').on(t.contactPerson),
+  ],
+);
+
+/* ---------- Lookup tables ----------
+
+   §8: *lookup tables, not enums*, because the admin has to be able to add an
+   option at runtime. Every one of them carries `isActive` rather than a delete:
+   from Phase 10 a booking snapshots the name it used, so deactivating a room
+   type stops it being offered on new bookings without disturbing the old ones.
+   `sortOrder` exists because these are pickers, and alphabetical order is wrong
+   for every one of them — "Double, Quad, Quint, Single, Triple" is not how
+   anyone reads a room list.
+   ------------------------------------------------------------------------ */
+
+export const roomTypes = sqliteTable('room_types', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+});
+
+export const mealPlans = sqliteTable('meal_plans', {
+  id: text('id').primaryKey(),
+  code: text('code').notNull(), // RO, BB, HB, FB, AI
+  name: text('name').notNull(), // Room Only, Bed & Breakfast, ...
+  sortOrder: integer('sort_order').notNull().default(0),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+});
+
+export const serviceTypes = sqliteTable('service_types', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  // Whole Saudi Riyals, like every money column (§8). A default only — the
+  // booking form may override it, and the booking stores what was charged.
+  defaultPrice: integer('default_price'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+});
+
+export const HOTEL_CITIES = ['makkah', 'madinah', 'jeddah', 'other'] as const;
+export const HOTEL_CATEGORIES = [
+  'economy',
+  '1_star',
+  '2_star',
+  '3_star',
+  '4_star',
+  '5_star',
+] as const;
+
+export const hotels = sqliteTable(
+  'hotels',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    city: text('city', { enum: HOTEL_CITIES }).notNull(),
+    // Only meaningful when `city` is `other`; §8 keeps the common three as an
+    // enum because they are what the scheduler and the reports group by.
+    cityOther: text('city_other'),
+    category: text('category', { enum: HOTEL_CATEGORIES }),
+    isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [index('idx_hotels_name').on(t.name)],
+);
+
+export const paymentMethods = sqliteTable('payment_methods', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+});

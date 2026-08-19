@@ -12,9 +12,9 @@
  *    through the `-u-nu-latn` locale extension. Month and weekday names still
  *    localise — it is the digits that are fixed, not the language.
  *
- * `formatSAR()` for money (§Appendix B) belongs here too and lands with the
- * first screen that shows an amount, in Release 2. There is nothing to format
- * on the public site.
+ * `formatSAR()` is here too, and it landed in Phase 9 with the first screen
+ * that shows an amount — the default price on a service type. There is nothing
+ * to format on the public site.
  */
 
 export const TIME_ZONE = 'Asia/Riyadh';
@@ -33,4 +33,33 @@ export function formatDate(date: string | Date, locale: string): string {
     month: 'long',
     year: 'numeric',
   }).format(typeof date === 'string' ? new Date(date) : date);
+}
+
+/**
+ * Money (§8, Appendix B — *every money value through `formatSAR()`, never raw
+ * interpolation*).
+ *
+ * The argument is a whole number of Saudi Riyals, because that is what every
+ * money column stores: `integer`, no minor units, no decimals, SAR only. The
+ * stored value equals the displayed value — `1500` renders as `SAR 1,500` —
+ * which is the property §8 chose integers for. Nothing here divides by a
+ * hundred, and nothing should ever start.
+ *
+ * `Intl.NumberFormat` in `decimal` style with the currency written out, rather
+ * than `style: 'currency'`. The currency style renders `SAR 1,500.00` in `en`
+ * and `1٬500.00 ر.س.‏` in `ar`, and both are wrong here: the trailing `.00` is
+ * noise on a value that cannot have fractions, and an invoice that says
+ * `ر.س.` in one locale and `SAR` in another is two different documents. The
+ * label is fixed because the currency is (§8 — SAR only).
+ *
+ * Digits are pinned to Latin for the same reason `formatDate` pins them (§6),
+ * so an amount reads identically on `/en`, on `/ar`, and on the PDF.
+ */
+export function formatSAR(riyals: number): string {
+  const amount = new Intl.NumberFormat('en-u-nu-latn', {
+    style: 'decimal',
+    maximumFractionDigits: 0,
+  }).format(riyals);
+
+  return `SAR ${amount}`;
 }

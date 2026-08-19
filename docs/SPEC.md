@@ -1631,6 +1631,57 @@ Bulk approve and bulk mark-spam are available on the pending tab, since spam usu
 
 **Optional, worth considering:** an email notification to the company inbox when a review is submitted. Turns the queue from something you must remember to check into something that reaches you. Low cost — the Resend integration already exists for enquiries.
 
+### Phase 9 rulings — where the build departs from §4 and §13.8
+
+Phase 9 is built and deployed: the five lookup tables with their seed,
+`/admin/settings/lists`, `/admin/settings/company`, and agencies. Five things
+needed deciding.
+
+**1 — Viewers can read agencies; only admin and executive can change one.** §12's
+table names "Manage agencies" and says nothing about *reading* one, and the two
+readings lead to different screens. The reading taken: `/admin/agencies` and the
+profile require `viewPanel`, every mutation requires `manageAgencies`. A viewer
+can already open a booking, and from Phase 10 every booking carries the agency's
+name and contact details on its face — so hiding the agency list from a viewer
+would conceal nothing they cannot already see, while making the panel
+inconsistent about what "read-only" means. The create, edit and archive controls
+are not rendered for a viewer *and* the actions behind them refuse one.
+
+**2 — Two routes §4 does not list.** `/admin/agencies/new` and
+`/admin/agencies/[id]/edit`. §4's map names the list and the profile; the Phase 9
+brief asks for CRUD, which needs somewhere to do the C and the U. Dedicated
+routes rather than modals, because §20 makes the panel a phone product first and
+a modal holding eight fields on a phone is a full screen with a worse back
+button.
+
+**3 — The agency profile ships without its figures.** §13.8 asks for total
+bookings, rooms, guests, value, received and outstanding, plus recent bookings
+and a **+ New booking** button. Every one of those reads the `bookings` table,
+which arrives in Phase 10. The screen therefore ships with the contact details
+and an explicit placeholder where the totals go. The **+ New booking** button is
+*absent* rather than disabled: it would point at `/admin/bookings/new`, which
+does not exist, and a dead link in front of staff is worse than a button that
+appears when it works — the same rule the sidebar follows in listing only routes
+that exist.
+
+**4 — Lookup entries are retired, never deleted.** Every list carries `isActive`
+and no delete, and the button says *Retire*. From Phase 10 a booking snapshots
+the room type name, meal plan code and hotel name it used, and the foreign keys
+point back here, so deleting a room type to tidy a list would be deleting part of
+a booking's history. Agencies get `isArchived` for the same reason. This is the
+same instinct as deactivating rather than deleting a staff account.
+
+**5 — A migration file may not use `/* … */` comments.** Learned the hard way:
+`0004_seed_lookups.sql` applied cleanly with `wrangler d1 execute --file` and
+failed under `wrangler d1 migrations apply --remote` with
+`SQL code did not contain a statement [code: 7500]`. The applier chunks a file on
+`--> statement-breakpoint` and rejects a chunk that opens with a block comment;
+the drizzle-generated migrations only ever use `--`, which is why nothing had hit
+it before. **Use `--` line comments in every hand-written migration.** The seed
+was written to be idempotent (`INSERT OR IGNORE` throughout), so recovering meant
+simply re-running it — it executed twice against the remote database and produced
+exactly one copy of every row.
+
 ---
 
 ## 14. Public features
@@ -1991,7 +2042,7 @@ of that script once the translation lands.**
 
 **Phase 8 — Auth.** Better Auth with D1, login, middleware guard, invite flow, users settings, seed first admin. Also rebuilds `reviews` and `enquiries` to add the two moderation foreign keys deferred out of Phase 2 (§8, *Deferred constraints*). **Built and deployed.** Migration `0001_phase8_auth.sql` is applied local and remote, and both foreign keys are live. The departures from §8 and §12 that the build forced — chiefly Better Auth 1.7's own column set, this project's own login rate limiter, and a nonce-based CSP for `/admin/*` — are recorded as *Phase 8 rulings* in §12.
 
-**Phase 9 — Foundations.** Lookup tables with seed data, company settings page, agencies CRUD.
+**Phase 9 — Foundations.** Lookup tables with seed data, company settings page, agencies CRUD. **Built and deployed.** Migrations `0003` (schema) and `0004` (seed) are applied local and remote; the seed is separate from the schema because the lists are the client's to edit at runtime, and it is idempotent so re-running it cannot overwrite their work. The departures from §4 and §13.8 — chiefly viewer read access to agencies, the two CRUD routes, and the agency profile shipping without the figures that need `bookings` — are recorded as *Phase 9 rulings* in §13.
 
 **Phase 10 — Bookings.** Full schema. Stepped mobile-first creation form. Rooms and services repeaters. Server-side calculation. Server-side draft autosave on step change. Confirm with atomic numbering. List with search and filters, including the Drafts filter with 30-day stale marking for manual deletion (§9.10). Detail screen. Edit with the section 9.3 guards. Cancel. Audit logging with before/after values.
 

@@ -196,3 +196,82 @@ export function FormMessage({
     </p>
   );
 }
+
+/**
+ * A labelled control with its hint and error wired for assistive technology.
+ *
+ * The same arrangement as the public forms' `Field` (`components/forms/
+ * fields.tsx`): `aria-describedby` points at whichever of the two is rendered,
+ * so a screen reader announces the problem when focus lands rather than leaving
+ * a red border only a sighted user can act on. The admin panel gets its own
+ * copy rather than importing that one because that file is `'use client'` and
+ * carries the honeypot and Turnstile plumbing, none of which belongs behind a
+ * sign-in wall.
+ */
+export function Field({
+  id,
+  label,
+  hint,
+  error,
+  required,
+  children,
+}: {
+  id: string;
+  label: string;
+  hint?: string;
+  error?: string;
+  required?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <Label htmlFor={id}>
+        {label}
+        {required ? (
+          <span aria-hidden="true" className="ms-1 text-brass-ink">
+            *
+          </span>
+        ) : null}
+      </Label>
+
+      {hint ? (
+        <p id={`${id}-hint`} className="mt-1 text-xs text-muted">
+          {hint}
+        </p>
+      ) : null}
+
+      <div className="mt-2">{children}</div>
+
+      {error ? (
+        <p id={`${id}-error`} className="mt-1.5 text-xs text-error">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** `<select>` and `<textarea>`, sharing the input's 16px floor and 44px height. */
+export const SELECT = `${INPUT} appearance-none bg-white`;
+
+export const TEXTAREA =
+  'w-full min-h-24 rounded-[2px] border border-hairline bg-white px-3.5 py-2.5 text-base text-ink placeholder:text-placeholder transition-colors focus:border-verdant';
+
+/**
+ * The sticky bottom action bar (§20.3).
+ *
+ * `sticky`, never `fixed` — iOS repositions fixed elements unpredictably when
+ * the keyboard opens, and every one of these bars sits under a form. The safe
+ * area inset keeps the primary action clear of the home indicator on a notched
+ * iPhone.
+ */
+export function StickyActions({ children }: { children: ReactNode }) {
+  return (
+    <div
+      className="sticky bottom-0 z-10 -mx-4 mt-6 border-t border-hairline bg-admin-ground/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:px-5"
+      style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+    >
+      <div className="flex flex-wrap items-center gap-3">{children}</div>
+    </div>
+  );
+}

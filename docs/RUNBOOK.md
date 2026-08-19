@@ -433,7 +433,25 @@ which case add the name to `EXTRA_COLUMNS` in the script.
 
 ---
 
-## Phase 9 — Foundations
+## Phase 9 — Foundations ✅ built
+
+Two migrations: `0003` creates the tables, `0004` seeds the lists and the
+placeholder `company_settings` row. They are separate because the lists are
+yours to edit at runtime and the schema is not, and `0004` is idempotent — every
+insert is `INSERT OR IGNORE`, so re-running it can never overwrite an edit you
+made in the UI.
+
+**Now enter your real company details** at `/admin/settings/company`, and
+confirm the hotel list at `/admin/settings/lists` — the six hotels seeded there
+are placeholders (§19 item 7). Neither needs a deploy.
+
+One trap worth remembering when you write a migration by hand: **use `--` line
+comments, never `/* … */`.** `wrangler d1 migrations apply` chunks a file on
+`--> statement-breakpoint` and rejects a chunk that opens with a block comment
+(`SQL code did not contain a statement [code: 7500]`), even though the same file
+applies fine with `wrangler d1 execute --file`.
+
+## Phase 9 — the original brief
 
 ```
 Read docs/SPEC.md section 8.

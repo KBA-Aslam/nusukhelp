@@ -39,6 +39,27 @@ type NavEntry = {
 const NAV: readonly NavEntry[] = [
   { href: '/admin', label: 'Dashboard', capability: 'viewPanel' },
   {
+    href: '/admin/agencies',
+    label: 'Agencies',
+    // `viewPanel`, not `manageAgencies`: a viewer can read an agency and
+    // cannot change one, and the actions enforce the difference (§12, and the
+    // Phase 9 ruling in §13).
+    capability: 'viewPanel',
+    prefix: true,
+  },
+  {
+    href: '/admin/settings/company',
+    label: 'Company',
+    capability: 'editCompanySettings',
+    prefix: true,
+  },
+  {
+    href: '/admin/settings/lists',
+    label: 'Lists',
+    capability: 'manageLists',
+    prefix: true,
+  },
+  {
     href: '/admin/settings/users',
     label: 'Users',
     capability: 'manageUsers',
