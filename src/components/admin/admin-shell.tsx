@@ -39,6 +39,15 @@ type NavEntry = {
 const NAV: readonly NavEntry[] = [
   { href: '/admin', label: 'Dashboard', capability: 'viewPanel' },
   {
+    href: '/admin/bookings',
+    label: 'Bookings',
+    // `viewPanel`: a viewer reads bookings and changes none of them. Creating,
+    // editing and cancelling are separate capabilities enforced in the actions
+    // (§12), which is where the difference has to be.
+    capability: 'viewPanel',
+    prefix: true,
+  },
+  {
     href: '/admin/agencies',
     label: 'Agencies',
     // `viewPanel`, not `manageAgencies`: a viewer can read an agency and

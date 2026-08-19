@@ -381,3 +381,305 @@ export const paymentMethods = sqliteTable('payment_methods', {
   sortOrder: integer('sort_order').notNull().default(0),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
 });
+
+/* ---------- Bookings (the core entity) ----------
+
+   **The booking is the only record. The invoice is a PDF view of it.**
+
+   There is no `invoices` table below and there never will be one. §9.1 gives a
+   booking exactly one number however many times its PDF is downloaded, §9.4
+   accumulates instalments against the booking itself, and §13.2 recognises
+   value once, at `bookingDate`. An invoice entity breaks all three at the same
+   time: billing a 5,000 booking in two parts becomes two rows, the scheduler
+   shows the stay twice, and the month's revenue is 5,000 or 10,000 depending on
+   which table the report happens to join. That model was tried and rejected —
+   the phantom duplicates are the reason this is a comment rather than a table.
+
+   The cost is accepted deliberately. Nothing archives what a client was shown,
+   because nothing was stored; `audit_log` at the foot of this file is what pays
+   for it, and §13.10 makes its before/after values the *only* record of a
+   superseded figure.
+   ------------------------------------------------------------------------ */
+
+/**
+ * The lifecycle, and the money, as two independent axes (§9.2).
+ *
+ * They are never merged. "Show me confirmed bookings" has to include the ones
+ * that are half paid, and "show me what is unpaid" has to include the ones that
+ * have already checked out — one column cannot answer both, and the version
+ * that tries answers neither.
+ */
+export const BOOKING_STATUSES = [
+  'draft',
+  'confirmed',
+  'checked_in',
+  'checked_out',
+  'completed',
+  'cancelled',
+] as const;
+
+export const PAYMENT_STATUSES = ['unpaid', 'partially_paid', 'paid'] as const;
+
+export const BOOKING_SOURCES = ['direct', 'allotment', 'custom'] as const;
+
+export type BookingStatus = (typeof BOOKING_STATUSES)[number];
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+export type BookingSource = (typeof BOOKING_SOURCES)[number];
+
+export const bookings = sqliteTable(
+  'bookings',
+  {
+    id: text('id').primaryKey(),
+
+    /**
+     * `AHR-2026-00041`, allocated **at confirmation, not at creation** (§9.1),
+     * which is why it is nullable: a draft has no number, and abandoned drafts
+     * therefore leave no gaps in the series.
+     */
+    bookingNumber: text('booking_number').unique(),
+    year: integer('year'),
+    sequence: integer('sequence'),
+
+    /* --- Agency: a soft link plus a snapshot (§9.5) ---
+       `agencyId` stays for filtering and for the §13.8 profile; the columns
+       beside it are copies. Renaming an agency next year must not rewrite the
+       name on a booking made this year — that booking's PDF has already gone
+       out under the old one. `set null` for the same reason: losing the link
+       must not lose the booking. */
+    agencyId: text('agency_id').references(() => agencies.id, {
+      onDelete: 'set null',
+    }),
+    agencyName: text('agency_name').notNull(),
+    contactPerson: text('contact_person'),
+    agencyMobile: text('agency_mobile'),
+    agencyWhatsapp: text('agency_whatsapp'),
+    agencyEmail: text('agency_email'),
+    agencyCountry: text('agency_country'),
+    agencyAddress: text('agency_address'),
+
+    /* --- Guest --- */
+    guestName: text('guest_name'),
+    guestMobile: text('guest_mobile'),
+    guestEmail: text('guest_email'),
+    guestCountry: text('guest_country'),
+
+    /* --- Hotel: snapshot, same reasoning as the agency --- */
+    hotelId: text('hotel_id').references(() => hotels.id, {
+      onDelete: 'set null',
+    }),
+    hotelName: text('hotel_name'),
+    hotelCity: text('hotel_city'),
+    hotelCategory: text('hotel_category'),
+    confirmationNumber: text('confirmation_number'),
+    brnVrn: text('brn_vrn'),
+    bookingSource: text('booking_source', { enum: BOOKING_SOURCES }),
+
+    /* --- Stay ---
+       Unix seconds at UTC midnight of the calendar day, like every other
+       integer time column (§8). `lib/time.ts` does the conversion to and from
+       the `YYYY-MM-DD` a native date input speaks; nothing here parses a date
+       string by hand. `totalNights` is derived from the two dates and is never
+       typed in (§9.6). */
+    checkInDate: integer('check_in_date'),
+    checkOutDate: integer('check_out_date'),
+    totalNights: integer('total_nights').notNull().default(0),
+    totalRooms: integer('total_rooms').notNull().default(0),
+    totalGuests: integer('total_guests').notNull().default(0),
+
+    /** When the work was written — what §13.2 recognises booking value at. */
+    bookingDate: integer('booking_date').notNull(),
+    dueDate: integer('due_date'),
+    currency: text('currency').notNull().default('SAR'),
+
+    /* --- Money: `integer`, whole Saudi Riyals, all of it derived (§9.6) ---
+       Only `discountAmount` is typed in by a person. The rest is recomputed
+       server-side by `recalculateBooking` and never accepted from a client. */
+    roomsSubtotal: integer('rooms_subtotal').notNull().default(0),
+    servicesSubtotal: integer('services_subtotal').notNull().default(0),
+    discountAmount: integer('discount_amount').notNull().default(0),
+    /**
+     * Always 0. Deliberate, not vestigial (§9.9): the company is not
+     * VAT-registered, nothing writes here, and neither PDF style renders it.
+     * The column exists so that registering later is a rate in
+     * `company_settings` and a template change rather than a migration of every
+     * booking ever made.
+     */
+    vatAmount: integer('vat_amount').notNull().default(0),
+    totalValue: integer('total_value').notNull().default(0),
+    /** `SUM(payments.amount) WHERE isReversed = false`. Derived, never set. */
+    amountPaid: integer('amount_paid').notNull().default(0),
+
+    status: text('status', { enum: BOOKING_STATUSES })
+      .notNull()
+      .default('draft'),
+
+    /**
+     * Derived from `amountPaid` against `totalValue`, and recalculated on
+     * **both** sides — payment changes *and* booking edits (§9.2). Reducing a
+     * booking's value can flip it from partially paid to fully paid with no
+     * payment having moved.
+     */
+    paymentStatus: text('payment_status', { enum: PAYMENT_STATUSES })
+      .notNull()
+      .default('unpaid'),
+
+    notes: text('notes'),
+    /** The T&C in force when the booking was confirmed (§9.5). */
+    terms: text('terms'),
+    cancelReason: text('cancel_reason'),
+
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => user.id),
+    updatedBy: text('updated_by').references(() => user.id),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+    confirmedAt: integer('confirmed_at'),
+    completedAt: integer('completed_at'),
+    cancelledAt: integer('cancelled_at'),
+  },
+  (t) => [
+    index('idx_bk_status').on(t.status),
+    index('idx_bk_payment_status').on(t.paymentStatus),
+    index('idx_bk_checkin').on(t.checkInDate),
+    index('idx_bk_checkout').on(t.checkOutDate),
+    index('idx_bk_booking_date').on(t.bookingDate),
+    index('idx_bk_agency').on(t.agencyId),
+    index('idx_bk_year').on(t.year),
+    index('idx_bk_confirmation').on(t.confirmationNumber),
+    index('idx_bk_brn').on(t.brnVrn),
+  ],
+);
+
+/**
+ * Room lines. `cascade` here and on services, because these rows have no
+ * meaning apart from their booking. Payments cascade too, but only so that
+ * deleting a draft cannot orphan anything — a booking with payments against it
+ * is never deleted at all (§9.8).
+ */
+export const bookingRooms = sqliteTable(
+  'booking_rooms',
+  {
+    id: text('id').primaryKey(),
+    bookingId: text('booking_id')
+      .notNull()
+      .references(() => bookings.id, { onDelete: 'cascade' }),
+    roomTypeId: text('room_type_id').references(() => roomTypes.id),
+    /** Snapshot, and what supports a room type typed in by hand (§9.5). */
+    roomTypeName: text('room_type_name').notNull(),
+    mealPlanId: text('meal_plan_id').references(() => mealPlans.id),
+    mealPlanCode: text('meal_plan_code'),
+    numberOfRooms: integer('number_of_rooms').notNull().default(1),
+    numberOfGuests: integer('number_of_guests').notNull().default(1),
+    /** Copied from the booking's dates, so a line always carries its own. */
+    nights: integer('nights').notNull(),
+    pricePerNight: integer('price_per_night').notNull(),
+    /** `numberOfRooms × nights × pricePerNight`, computed server-side. */
+    subtotal: integer('subtotal').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+  },
+  (t) => [index('idx_rooms_booking').on(t.bookingId)],
+);
+
+export const bookingServices = sqliteTable(
+  'booking_services',
+  {
+    id: text('id').primaryKey(),
+    bookingId: text('booking_id')
+      .notNull()
+      .references(() => bookings.id, { onDelete: 'cascade' }),
+    serviceTypeId: text('service_type_id').references(() => serviceTypes.id),
+    serviceName: text('service_name').notNull(),
+    quantity: integer('quantity').notNull().default(1),
+    unitPrice: integer('unit_price').notNull(),
+    /** `quantity × unitPrice`, computed server-side. */
+    total: integer('total').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+  },
+  (t) => [index('idx_services_booking').on(t.bookingId)],
+);
+
+/**
+ * Instalments against a booking, unlimited in number (§9.4).
+ *
+ * **Nothing deletes a payment.** Reversal sets `isReversed` and records the
+ * reason, the user and the time; the history then shows the original *and* the
+ * reversal, which is what a refund actually looks like. `amountPaid` sums only
+ * the rows where `isReversed` is false.
+ *
+ * The table ships in Phase 10 although the recording UI is Phase 11, because
+ * `recalculateBooking` sums it from the first booking that exists. An empty sum
+ * is 0, which is `unpaid`, which is the honest answer — and the alternative
+ * would be writing the derivation twice, once against a stub and once for real.
+ */
+export const payments = sqliteTable(
+  'payments',
+  {
+    id: text('id').primaryKey(),
+    bookingId: text('booking_id')
+      .notNull()
+      .references(() => bookings.id, { onDelete: 'cascade' }),
+    /** Whole Saudi Riyals (§8). */
+    amount: integer('amount').notNull(),
+    /** When the money arrived — what §13.2 recognises *received* at. */
+    paidAt: integer('paid_at').notNull(),
+    methodId: text('method_id').references(() => paymentMethods.id),
+    methodName: text('method_name'),
+    reference: text('reference'),
+    notes: text('notes'),
+    isReversed: integer('is_reversed', { mode: 'boolean' })
+      .notNull()
+      .default(false),
+    reversedAt: integer('reversed_at'),
+    reversedBy: text('reversed_by').references(() => user.id),
+    reverseReason: text('reverse_reason'),
+    recordedBy: text('recorded_by')
+      .notNull()
+      .references(() => user.id),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [index('idx_payments_booking').on(t.bookingId)],
+);
+
+/**
+ * One row per calendar year, holding the last sequence issued (§9.1).
+ *
+ * Allocation is a single atomic statement — `INSERT … ON CONFLICT DO UPDATE …
+ * RETURNING` — because D1 has no interactive transactions. Two executives
+ * confirming at the same instant get different numbers.
+ */
+export const bookingCounters = sqliteTable('booking_counters', {
+  year: integer('year').primaryKey(),
+  lastSequence: integer('last_sequence').notNull().default(0),
+});
+
+/* ---------- Audit ----------
+
+   This matters more here than in a system that stores its documents. Because
+   the invoice is re-rendered from current state, an edit leaves no superseded
+   copy anywhere — so `changes` has to carry the full before *and* after values,
+   not merely the fact that something changed (§13.10). It is the only record of
+   what a client was previously shown.
+   ------------------------------------------------------------------------ */
+
+export const auditLog = sqliteTable(
+  'audit_log',
+  {
+    id: text('id').primaryKey(),
+    /* Nullable, and `set null` on the reference: deactivating a staff account
+       must not erase what they did. */
+    actorId: text('actor_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    action: text('action').notNull(),
+    entityType: text('entity_type').notNull(),
+    entityId: text('entity_id').notNull(),
+    /** JSON. `{ before: {...}, after: {...} }` for an edit. */
+    changes: text('changes'),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [
+    index('idx_audit_entity').on(t.entityType, t.entityId),
+    index('idx_audit_created').on(t.createdAt),
+  ],
+);

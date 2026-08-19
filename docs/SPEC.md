@@ -1682,6 +1682,83 @@ was written to be idempotent (`INSERT OR IGNORE` throughout), so recovering mean
 simply re-running it — it executed twice against the remote database and produced
 exactly one copy of every row.
 
+### Phase 10 rulings — where the build departs from §8, §13.4 and §20
+
+Phase 10 is built and deployed: migration `0005_phase10_bookings.sql` (bookings,
+booking_rooms, booking_services, payments, booking_counters, audit_log) applied
+local and remote, the seven-step creation form, the list with its filters and
+the Drafts view, the detail screen, edit with the §9.3 guards, cancel, draft
+delete, and audit logging. Seven things needed deciding, and every one of them
+turns on the same fact: **the booking is the only record, so there is nothing
+downstream to reconcile and nothing upstream to check against.**
+
+**1 — `payments` ships in Phase 10, a phase ahead of its UI.** §18 gives payments
+to Phase 11, and this build creates the table anyway. The reason is §9.2's
+requirement that `paymentStatus` recalculate on *both* sides — payments and
+booking edits. Stubbing the sum until Phase 11 would mean writing the derivation
+twice, once against a stub and once for real, which is precisely the duplication
+the single-function design exists to prevent. `SUM` over no rows is `COALESCE`d
+to 0, which is `unpaid`, which is the honest answer for a booking nobody has paid
+for. Nothing writes to the table this phase.
+
+**2 — `recalculateBooking` is the single writer of every derived column, and
+that is the load-bearing decision of the phase.** `roomsSubtotal`,
+`servicesSubtotal`, `totalValue`, `totalNights`, `totalRooms`, `totalGuests`,
+`amountPaid` and `paymentStatus` are written in exactly one function
+(`db/queries/bookings-calc.ts`), which reads stored rows and is called last by
+every mutation. Phases 11 and 12 must call it rather than compute their own: a
+payment action that updates a total itself, or a report that re-derives a status
+in SQL "just for that query", is how two copies of a figure start disagreeing —
+and the way they disagree is that a booking reads *paid* on one screen and
+*partially paid* on another. The pure arithmetic lives in `lib/booking-math.ts`,
+with no database imports, so the form's running total uses the same expressions
+without pulling Drizzle into the browser bundle; the *authority* stays in the
+query module.
+
+**3 — The §9.3 warnings are enforced server-side, not in the browser.** An edit
+that would drop `totalValue` below `amountPaid`, or that touches a completed
+booking, returns `kind: 'confirm'` with the warning sentences and is re-submitted
+with `acknowledged: true`. Warning only in the form would be a warning a direct
+POST never sees, and §9.3 is explicit that neither case blocks the save —
+sometimes a refund genuinely is owed. Only *cancelled* refuses outright.
+
+**4 — The Drafts filter is `?status=draft`, not a separate view.** §13.6 asks for
+a Drafts filter and §9.10 keeps drafts out of everything else; both are the same
+query parameter, so there is one code path and no chance of two definitions of
+"draft" drifting apart. Drafts untouched for 30 days carry a **Stale** badge.
+Nothing on that screen deletes on a schedule, and nothing should be added that
+does: the badge is an invitation to a person, not a countdown.
+
+**5 — Record payment and Download PDF are absent from the detail screen, not
+disabled.** §13.4 lists both among the actions; they belong to Phases 11 and 12.
+This follows the Phase 9 ruling on the agency profile's **+ New booking**
+button — a dead control in front of staff is worse than one that appears when it
+works. Each section says plainly what is coming, so the screen reads unfinished
+rather than broken. The same ruling now pays out in reverse: **+ New booking** is
+live on the agency profile, pointing at `/admin/bookings/new?agency=<id>`, and
+the §13.8 figures have replaced the Phase 9 placeholder. They exclude drafts and
+cancelled bookings, matching §13.2 exactly — an agency total that does not
+reconcile with the report is worse than no agency total.
+
+**6 — A burned booking number beats a duplicate one.** Allocation is §9.1's
+single atomic statement, and it runs *after* the booking has been saved, so
+every failure mode leaves a gap in the year's sequence rather than two bookings
+quoting `AHR-2026-00041`. A gap is a cosmetic problem someone may one day ask
+about; a duplicate is a financial one, with two totals and no way to tell which
+invoice a payment referred to. Confirming is likewise the last step of the action
+and the redirect sits outside the `try`, so a confirmed booking is never reported
+as a failure and re-confirmed.
+
+**7 — Four calendar-date columns had to be added to the timestamp checker by
+hand.** `check_in_date`, `check_out_date`, `booking_date` and `due_date` are days
+rather than instants and none matches the `*_at` convention
+`scripts/check-timestamps.mjs` discovers columns by, so all four are now in
+`EXTRA_COLUMNS` — the case §8 warns about, where the failure mode is a check
+silently not happening. It was verified the way §8 asks rather than assumed: a
+millisecond value was written into `bookings.check_in_date` in the local
+database, the checker was confirmed to name that column and exit non-zero, and
+the row was removed. Both databases pass across 38 columns in 21 tables.
+
 ---
 
 ## 14. Public features
@@ -2044,9 +2121,9 @@ of that script once the translation lands.**
 
 **Phase 9 — Foundations.** Lookup tables with seed data, company settings page, agencies CRUD. **Built and deployed.** Migrations `0003` (schema) and `0004` (seed) are applied local and remote; the seed is separate from the schema because the lists are the client's to edit at runtime, and it is idempotent so re-running it cannot overwrite their work. The departures from §4 and §13.8 — chiefly viewer read access to agencies, the two CRUD routes, and the agency profile shipping without the figures that need `bookings` — are recorded as *Phase 9 rulings* in §13.
 
-**Phase 10 — Bookings.** Full schema. Stepped mobile-first creation form. Rooms and services repeaters. Server-side calculation. Server-side draft autosave on step change. Confirm with atomic numbering. List with search and filters, including the Drafts filter with 30-day stale marking for manual deletion (§9.10). Detail screen. Edit with the section 9.3 guards. Cancel. Audit logging with before/after values.
+**Phase 10 — Bookings.** Full schema. Stepped mobile-first creation form. Rooms and services repeaters. Server-side calculation. Server-side draft autosave on step change. Confirm with atomic numbering. List with search and filters, including the Drafts filter with 30-day stale marking for manual deletion (§9.10). Detail screen. Edit with the section 9.3 guards. Cancel. Audit logging with before/after values. **Built and deployed.** Migration `0005_phase10_bookings.sql` is applied local and remote and creates six tables — `bookings`, `booking_rooms`, `booking_services`, `payments`, `booking_counters`, `audit_log`. `payments` deliberately arrives a phase ahead of its UI so that the derivation has one implementation rather than two; the departures from §8, §13.4 and §20 are recorded as *Phase 10 rulings* in §13. The panel screens have **not** been checked on a device: signing in needs an account, and accounts are the client's to create (§19 item 20).
 
-**Phase 11 — Payments.** Unlimited instalments recorded against a booking. Derived `amountPaid` and `paymentStatus`, recalculated on payment *and* on booking edit. Reversal with reason. Payment history on the booking detail screen.
+**Phase 11 — Payments.** Unlimited instalments recorded against a booking. Derived `amountPaid` and `paymentStatus`, recalculated on payment *and* on booking edit. Reversal with reason. Payment history on the booking detail screen. The table and the derivation already exist (Phase 10 ruling 1); **this phase must call `recalculateBooking` rather than compute either figure itself** (ruling 2).
 
 **Phase 12 — PDF.** Two type shapes, sanitiser, two separate document components, generation UI, amount-in-words, generation timestamp in the header. Web Share API delivery with download fallback (section 20.2). **Test on a real iPhone before moving on** — verify A4 dimensions, page breaks, and the share sheet. **Test the confidential style specifically for leaks** — inspect extracted PDF text, not just the visual render.
 
@@ -2085,7 +2162,7 @@ of that script once the translation lands.**
 | 15 | Decide on HSTS `preload` — a near-irreversible commitment for every future subdomain (§15) | Client | Go-live | `max-age=63072000; includeSubDomains`, no `preload` |
 | ~~16~~ | ~~Turn `workers_dev` off in `wrangler.jsonc`~~ | Build | — | **Done.** `workers_dev: false` is deployed. `nusukhelp.lazykba.workers.dev` now returns 404 — the hostname still resolves on Cloudflare's shared addresses, but no Worker is attached — while both custom domains serve 200. The preview URL was how every phase got verified over HTTPS, which is why it deliberately outlived Phase 7 |
 | ~~21~~ | ~~Normalise `reviews.created_at` and `enquiries.created_at` to Unix **seconds**~~ | Build | — | **Done, as a standalone change between Phase 8 and Phase 9.** Found in Phase 8 while inspecting live data and deliberately left out of that commit — migrating a live table holding a real customer review is not something to bundle into an unrelated phase. The client ruled it a live data-integrity bug that gets more expensive with every phase that queries by date, and fixed it on its own. Migration `0002` converted the stored values (guarded, idempotent); `src/lib/time.ts` is now the only clock and no `Date.now()` arithmetic remains in `src/`; `npm run check:timestamps:*` asserts the invariant across **every** table, discovering its columns from the database rather than a list. The checker was confirmed to fail on the real defect before the migration was applied, and to pass after. The one affected row — a genuine pending review — kept its value and now reads `2026-08-19 00:53:19` UTC |
-| 20 | Seed the first admin account — `npm run seed:admin:remote` (docs/SECRETS.md §6) | Client | **Use of the panel** | Nothing. The code is deployed and the migration applied; the panel simply has no accounts, and by design it cannot make itself one |
+| 20 | ~~Seed the first admin account~~ — done; **one account now exists remotely**. What remains is that nobody but the client holds a panel credential, so no build phase can verify an admin screen on a real device. Phase 10 shipped unverified visually for this reason | Client | **Device QA of every admin phase** | Nothing. Either the client runs the §20.6 checks on the live panel themselves, or they create an account for the build to use — the values are theirs to type either way (docs/SECRETS.md, RUNBOOK §1.4) |
 | ~~19~~ | ~~End-to-end verification of both public forms on the live site~~ | Build | — | **Done.** A review submitted through the real form stored as `pending`, was absent from a render that had seen the row, appeared only after approval — `22:26:44Z` approved, `23:22:01Z` visible, the ISR window turning `HIT → STALE → HIT` — and carried no reviewer email in HTML, JSON or structured data. An enquiry stored and notified. Both test rows deleted; the guards fail closed. Tagged `release-1-complete` |
 
 Item 1 now covers two things, and they go to the advisor **together**. The

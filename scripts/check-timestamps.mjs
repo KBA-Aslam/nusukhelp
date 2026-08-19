@@ -46,8 +46,22 @@ import { fileURLToPath } from 'node:url';
 const DB = 'nusukhelp-db';
 const MILLISECOND_THRESHOLD = 100_000_000_000;
 
-/** Time columns whose names do not end in `_at`. */
-const EXTRA_COLUMNS = new Set(['window_start']);
+/**
+ * Time columns whose names do not end in `_at`.
+ *
+ * Phase 10 added four at once — a booking's stay dates, the date it was
+ * written, and the date it falls due — none of which the `_at` convention
+ * catches. §8 is explicit that the failure mode of the convention is a check
+ * that silently does not happen, so a column named for a *day* rather than an
+ * instant belongs here the moment it is created.
+ */
+const EXTRA_COLUMNS = new Set([
+  'window_start',
+  'check_in_date',
+  'check_out_date',
+  'booking_date',
+  'due_date',
+]);
 
 /**
  * Tables the platform owns; not ours to police.

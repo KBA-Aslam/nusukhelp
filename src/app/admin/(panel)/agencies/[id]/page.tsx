@@ -10,8 +10,11 @@ import {
   Pill,
 } from '@/components/admin/ui';
 import { getAgency } from '@/db/queries/agencies';
+import { getAgencyTotals, listBookings } from '@/db/queries/bookings';
+import { PaymentPill, StatusPill } from '@/components/admin/booking-status';
+import { BUTTON_PRIMARY } from '@/components/admin/ui';
 import { requirePageAccess } from '@/lib/auth-guard';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatSAR } from '@/lib/format';
 import { roleCan } from '@/lib/permissions';
 import { fromSeconds } from '@/lib/time';
 
@@ -33,15 +36,16 @@ export async function generateMetadata({
  *
  * §13.8 asks for contact details plus total bookings, total rooms, total
  * guests, total booking value, total received, outstanding, recent bookings,
- * and a **+ New booking** button. **Everything in that second list depends on
- * the `bookings` table, which arrives in Phase 10**, so this screen ships with
- * the contact details and an honest placeholder where the figures go.
+ * and a **+ New booking** button. Phase 9 shipped the contact details with a
+ * placeholder where the figures go, because every one of them reads the
+ * `bookings` table. **Phase 10 fills it in**, and the button appears with it —
+ * `/admin/bookings/new?agency=<id>` now exists, so it is a live link rather
+ * than the dead one Phase 9 declined to render.
  *
- * The **+ New booking** button is likewise absent rather than disabled: it
- * would point at `/admin/bookings/new`, which does not exist, and a dead link
- * in front of staff on the day the panel opens is worse than a button that
- * appears when it works. Same reasoning as the sidebar listing only the routes
- * that exist.
+ * The figures exclude drafts and cancelled bookings, exactly as the dashboard's
+ * three money figures do (§13.2, §9.8). They have to use the same exclusions or
+ * an agency's total will not reconcile with the report's, and the first person
+ * to notice will be the one who trusts neither afterwards.
  */
 export default async function AgencyProfilePage({
   params,
@@ -54,7 +58,13 @@ export default async function AgencyProfilePage({
   const agency = await getAgency(id);
   if (!agency) notFound();
 
+  const [totals, recent] = await Promise.all([
+    getAgencyTotals(id),
+    listBookings({ agencyId: id, limit: 8 }),
+  ]);
+
   const canManage = roleCan(user.role, 'manageAgencies');
+  const canCreateBookings = roleCan(user.role, 'createBookings');
 
   const details: Array<[string, string | null]> = [
     ['Contact person', agency.contactPerson],
@@ -71,14 +81,25 @@ export default async function AgencyProfilePage({
         title={agency.agencyName}
         description={`Added ${formatDate(fromSeconds(agency.createdAt), 'en')}`}
         action={
-          canManage ? (
-            <Link
-              href={`/admin/agencies/${agency.id}/edit`}
-              className={BUTTON_SECONDARY}
-            >
-              Edit
-            </Link>
-          ) : undefined
+          <div className="flex flex-wrap gap-2.5">
+            {canManage ? (
+              <Link
+                href={`/admin/agencies/${agency.id}/edit`}
+                className={BUTTON_SECONDARY}
+              >
+                Edit
+              </Link>
+            ) : null}
+            {canCreateBookings && !agency.isArchived ? (
+              // §13.3 — step 1 pre-filled, form opens on step 2.
+              <Link
+                href={`/admin/bookings/new?agency=${agency.id}`}
+                className={BUTTON_PRIMARY}
+              >
+                + New booking
+              </Link>
+            ) : null}
+          </div>
         }
       />
 
@@ -123,14 +144,52 @@ export default async function AgencyProfilePage({
         ) : null}
 
         <Card
-          title="Bookings"
-          description="Totals, financial history and recent bookings (§13.8)."
+          title="Totals"
+          description="Drafts and cancelled bookings are excluded, as everywhere else."
         >
-          <EmptyState>
-            Bookings arrive in Phase 10. This is where an agency&rsquo;s totals,
-            what has been received, what is outstanding, and its recent bookings
-            will appear.
-          </EmptyState>
+          <dl className="grid grid-cols-2 gap-px bg-hairline sm:grid-cols-3">
+            <Figure label="Bookings" value={String(totals.bookingCount)} />
+            <Figure label="Rooms" value={String(totals.totalRooms)} />
+            <Figure label="Guests" value={String(totals.totalGuests)} />
+            <Figure label="Booking value" value={formatSAR(totals.totalValue)} />
+            <Figure label="Received" value={formatSAR(totals.received)} />
+            <Figure label="Outstanding" value={formatSAR(totals.outstanding)} />
+          </dl>
+        </Card>
+
+        <Card title="Recent bookings">
+          {recent.length === 0 ? (
+            <EmptyState>No bookings for this agency yet.</EmptyState>
+          ) : (
+            <ul className="divide-y divide-hairline">
+              {recent.map((booking) => (
+                <li key={booking.id}>
+                  <Link
+                    href={`/admin/bookings/${booking.id}`}
+                    className="flex min-h-11 flex-wrap items-center justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-mist/50 sm:px-5"
+                  >
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-ink">
+                        {booking.bookingNumber ?? 'Draft'}
+                      </span>
+                      <span className="block truncate text-xs text-muted">
+                        {[booking.guestName, booking.hotelName]
+                          .filter(Boolean)
+                          .join(' · ') || '—'}
+                      </span>
+                    </span>
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-ink">
+                        {formatSAR(booking.totalValue)}
+                      </span>
+                      <StatusPill status={booking.status} />
+                      <PaymentPill status={booking.paymentStatus} />
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
 
         {canManage ? (
@@ -145,5 +204,14 @@ export default async function AgencyProfilePage({
         ) : null}
       </div>
     </>
+  );
+}
+
+function Figure({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-white px-4 py-3.5 sm:px-5">
+      <dt className="text-xs tracking-wide text-muted uppercase">{label}</dt>
+      <dd className="mt-1 font-display text-lg text-ink">{value}</dd>
+    </div>
   );
 }
