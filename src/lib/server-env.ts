@@ -27,11 +27,28 @@ type Secrets = {
   TURNSTILE_SECRET_KEY?: string;
   RESEND_API_KEY?: string;
   IP_HASH_SALT?: string;
+  BETTER_AUTH_SECRET?: string;
+  BETTER_AUTH_URL?: string;
 };
 
 async function secret(name: keyof Secrets): Promise<string | null> {
   const { env } = await getCloudflareContext({ async: true });
   const value = (env as unknown as Secrets)[name];
+  return value && value.length > 0 ? value : null;
+}
+
+/**
+ * The same lookup against an `env` already in hand.
+ *
+ * `lib/auth.ts` builds the Better Auth instance from the request's `env`
+ * object, which it already holds; going back through `getCloudflareContext`
+ * for each of two values would be a second async hop for nothing.
+ */
+export function secretFrom(
+  env: unknown,
+  name: keyof Secrets,
+): string | null {
+  const value = (env as Secrets)[name];
   return value && value.length > 0 ? value : null;
 }
 

@@ -83,6 +83,14 @@
      "Everything stays flat: hairline rules, 2px radius, no drop shadows."
      The 3px radius appears on a few prototype cards; 2px is the rule. */
   --radius-sharp: 2px;
+
+  /* --- Admin -----------------------------------------------------------
+     The page ground of the admin mockup (`docs/prototype/04-admin-dashboard-
+     desktop.svg`). A cooler off-white than `--color-sand`, which reads warm
+     against the ink sidebar. Sampled from the prototype rather than picked;
+     it is the only colour the panel adds, everything else it draws with is
+     already in the §7 set. 15.4:1 against `--color-ink`. */
+  --color-admin-ground: #f4f6f4;
 }
 
 /* --------------------------------------------------------------------------

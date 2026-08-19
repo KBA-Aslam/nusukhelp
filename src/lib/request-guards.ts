@@ -21,7 +21,19 @@ export const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000;
  * `hashIp`.
  */
 export function clientIp(request: Request): string | null {
-  return request.headers.get('CF-Connecting-IP');
+  return clientIpFromHeaders(request.headers);
+}
+
+/**
+ * The same lookup from a bare `Headers`.
+ *
+ * A server action has `headers()` from `next/headers`, not a `Request` — and
+ * building a throwaway `Request` around them just to reach the header is the
+ * sort of thing that reads like a mistake three months later. The login action
+ * (§12) uses this; the public route handlers keep `clientIp`.
+ */
+export function clientIpFromHeaders(headers: Headers): string | null {
+  return headers.get('CF-Connecting-IP');
 }
 
 /**

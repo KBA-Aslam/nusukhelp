@@ -17,16 +17,20 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply nusukhelp-db --local",
-    "db:migrate:remote": "wrangler d1 migrations apply nusukhelp-db --remote"
+    "db:migrate:remote": "wrangler d1 migrations apply nusukhelp-db --remote",
+    "seed:admin:local": "node scripts/seed-admin.mjs --local",
+    "seed:admin:remote": "node scripts/seed-admin.mjs --remote"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
+    "better-auth": "^1.7.1",
     "drizzle-orm": "^0.45.2",
     "next": "15.5.23",
     "next-intl": "^4.13.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.85.0",
+    "server-only": "^0.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

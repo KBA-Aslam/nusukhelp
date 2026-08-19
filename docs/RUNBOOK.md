@@ -390,6 +390,25 @@ Deploy, commit, stop.
 
 ✅ Log out, hit `/admin/bookings` directly, confirm redirect.
 
+**Before that check works you need an account, and the panel cannot make you
+one.** There is no public sign-up — that is the access model, not an oversight
+(SPEC §12). Two steps, once:
+
+```bash
+npx wrangler secret put BETTER_AUTH_SECRET   # see docs/SECRETS.md §5
+npm run seed:admin:remote                    # asks for name, email, password
+```
+
+The seed script refuses to run a second time. Every account after the first
+comes from an invitation sent inside `/admin/settings/users`, which is what
+keeps `admin_invites` a complete record of who let whom in.
+
+For local development the same two things are needed on the local side:
+`.dev.vars` with `BETTER_AUTH_SECRET` (§1.4 above) and
+`npm run seed:admin:local`. Without the secret, `/admin/*` returns a 500 naming
+the variable — deliberately, because the alternative is a per-isolate generated
+secret that signs people out at random.
+
 `/clear`
 
 ---

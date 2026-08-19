@@ -158,11 +158,59 @@ A failure prints `enquiry notification failed:` with the status Resend returned.
 
 ---
 
-## 5. Later phases
+## 5. The two auth secrets — Phase 8
 
-Not needed yet; listed so this file stays the one place to look (§3).
+Both are set. They are recorded here because rotating them has consequences
+worth knowing before you do it, not because anything is outstanding.
 
-| Secret | Lands in |
-|---|---|
-| `BETTER_AUTH_SECRET` | Phase 8 — auth |
-| `BETTER_AUTH_URL` | Phase 8 — auth |
+```bash
+# A random 32-byte value. Generate it and pipe it straight in, so the value
+# never appears in a terminal, a file or a shell history:
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))" \
+  | npx wrangler secret put BETTER_AUTH_SECRET
+
+# The canonical origin. Not really a secret — it is in every URL the site
+# serves — but §3 keeps it alongside the others so there is one place to look.
+echo "https://nusukhelp.com" | npx wrangler secret put BETTER_AUTH_URL
+```
+
+| Secret | Missing behaviour | Rotation |
+|---|---|---|
+| `BETTER_AUTH_SECRET` | **`/admin/*` fails with a 500 and a message naming this variable.** Deliberate: Better Auth will otherwise generate its own, and a generated secret differs per isolate, so sessions signed by one Worker instance are rejected by the next — an intermittent, unreproducible "you were signed out" | Signs out **everyone, immediately**. No data is lost; each person signs in again |
+| `BETTER_AUTH_URL` | Falls back to `SITE_URL` from `lib/site.ts`, which is the same value. Nothing breaks | Harmless |
+
+The public site is unaffected by either. `lib/auth.ts` builds the Better Auth
+instance lazily, on the first admin request, so a missing secret never reaches a
+marketing page.
+
+### There is no secret for the invite tokens
+
+Worth stating, because it looks like an omission. Invite tokens are 32 bytes of
+`crypto.getRandomValues` and are stored as an unsalted SHA-256 digest. A salt
+would add nothing: there is no dictionary to try against 256 bits of entropy, so
+the digest exists only so that a stolen row cannot be replayed as a working
+link. `IP_HASH_SALT` is a different problem — IPv4 has four billion values, which
+*is* a dictionary — which is why that one has a salt and this does not.
+
+---
+
+## 6. Seeding the first admin account
+
+Once the secrets above are set and the Phase 8 migration is applied, the panel
+has no accounts and no way to make one from the browser: there is no public
+sign-up, and only an admin can invite (§12). The first account is created by a
+one-off script:
+
+```bash
+npm run seed:admin:remote    # or seed:admin:local against the local D1
+```
+
+It asks for a name, an email and a password, hashes the password with **Better
+Auth's own `hashPassword`** so the sign-in verifier can read it, and writes the
+`user` and credential `account` rows. The password is read with echo off and
+reaches D1 in a temporary file that is deleted immediately; nothing is passed on
+a command line.
+
+**It refuses to run if any account already exists.** After the first one, every
+further account comes from an invitation sent inside the panel, which is what
+keeps `admin_invites` a complete record of who let whom in.

@@ -35,10 +35,13 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
  * element — the JSON-LD block — escapes `<` explicitly (see
  * `components/seo/json-ld.tsx`).
  *
- * **Phase 8 changes this calculation.** `/admin/*` is authenticated, dynamic
- * and rendered per request, so it can carry a nonce cheaply and should: that is
- * where a stored-XSS bug would actually cost something. The nonce belongs in
- * the admin middleware with a policy of its own, not in this one.
+ * **Phase 8 acted on this.** `/admin/*` is authenticated, dynamic and rendered
+ * per request, so it carries a nonce cheaply — and it is where a stored-XSS bug
+ * would actually cost something. That policy lives in `src/middleware.ts`,
+ * because a nonce has to be generated per response and `headers()` here is
+ * static configuration. The `source` patterns below consequently exclude
+ * `/admin`: two `Content-Security-Policy` headers on one response are enforced
+ * as their intersection, which is a policy nobody wrote and nobody can read.
  *
  * **Phase 6 added the Turnstile hosts.** `challenges.cloudflare.com` is now in
  * `script-src` (the widget's `api.js`) and `frame-src` (the challenge itself
@@ -126,22 +129,30 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/:path*',
+        // Everything except `/admin`, whose CSP is per-response and set in
+        // middleware. See the note above `CONTENT_SECURITY_POLICY`.
+        source: '/((?!admin(?:/|$)).*)',
         headers: SECURITY_HEADERS,
       },
       {
         /**
          * §15 — `noindex, nofollow` on all `/admin/*`.
          *
-         * The route tree lands in Phase 8. The header is here now so the panel
-         * cannot be briefly crawlable on the day it ships, and because the
-         * requirement belongs with the other security headers rather than
-         * scattered into a layout's metadata. It costs nothing while there is
-         * nothing at `/admin`.
+         * A response header rather than a `robots` export in the admin layout,
+         * so that it covers the route handlers and redirects too — anything a
+         * crawler could reach under `/admin`, not only the pages that render
+         * a `<head>`. The admin layout sets the metadata as well; the two
+         * agree, and neither depends on the other having been remembered.
+         *
+         * The CSP is absent from this list on purpose. Everything else in
+         * `SECURITY_HEADERS` is static and is repeated here because the pattern
+         * above no longer matches these paths.
          */
         source: '/admin/:path*',
         headers: [
-          ...SECURITY_HEADERS,
+          ...SECURITY_HEADERS.filter(
+            (header) => header.key !== 'Content-Security-Policy',
+          ),
           { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
         ],
       },

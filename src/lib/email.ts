@@ -44,7 +44,24 @@ const RESEND_ENDPOINT = 'https://api.resend.com/emails';
  * arriving. Setup is in `docs/SECRETS.md`; it is a DNS action, not a code
  * change.
  */
-const FROM = 'Nusuk Help <notifications@send.nusukhelp.com>';
+const SENDING_DOMAIN = 'send.nusukhelp.com';
+
+function sender(name: string, mailbox: string): string {
+  return `${name} <${mailbox}@${SENDING_DOMAIN}>`;
+}
+
+/**
+ * Two senders, one verified domain.
+ *
+ * They differ in display name because they come from different sides of the
+ * business and §7 makes logo and naming placement enforced rather than
+ * advisory: an enquiry notification is Nusuk Help, the public brand; a staff
+ * invitation is Al Haramain Reservation, which is the only name the admin panel
+ * and the invoice carry. The mailbox differs too, so a rule in the company's
+ * inbox can file one and not the other.
+ */
+const FROM = sender('Nusuk Help', 'notifications');
+const FROM_ADMIN = sender('Al Haramain Reservation', 'invites');
 
 /** Where enquiries land. The company's published address (§1). */
 const TO = EMAIL;
@@ -118,5 +135,82 @@ export async function sendEnquiryNotification(
   } catch (error) {
     console.error('enquiry notification failed', error);
     return false;
+  }
+}
+
+/**
+ * The staff invitation (§12, step 4).
+ *
+ * ## This one *does* throw, and that is the opposite of the rule above
+ *
+ * `sendEnquiryNotification` swallows every failure because the enquiry is
+ * already stored and a Resend outage must not turn a captured lead into an
+ * error page. An invitation is the reverse case in every respect. The email
+ * **is** the deliverable: the plaintext token exists nowhere else — not in the
+ * database, which holds only its SHA-256 hash, and not in the response, which
+ * would put a bearer credential in a Worker log the moment anything logged it.
+ * An invite row whose email never went out is not a partial success, it is a
+ * dead row and a colleague waiting for a link that is never coming.
+ *
+ * So the caller sends first and writes the row only if this resolves, and a
+ * failure surfaces on the screen of the admin who can simply try again.
+ */
+export async function sendInviteEmail(invite: {
+  to: string;
+  name: string;
+  roleLabel: string;
+  invitedByName: string;
+  url: string;
+  expiresInDays: number;
+}): Promise<void> {
+  const apiKey = await resendApiKey();
+  if (!apiKey) {
+    throw new Error(
+      'RESEND_API_KEY is not set, so the invitation could not be sent.',
+    );
+  }
+
+  // Plain text, like the enquiry notification. A recipient who is about to type
+  // a password wants to see the URL they are being asked to open, in full,
+  // rather than a styled button whose destination is hidden behind an anchor —
+  // that is what a phishing mail looks like, and staff should be taught to
+  // distrust it rather than to click it.
+  const text = [
+    `${invite.name},`,
+    '',
+    `${invite.invitedByName} has invited you to the Al Haramain Reservation admin panel as ${invite.roleLabel}.`,
+    '',
+    'Open this link to set a password and activate your account:',
+    '',
+    invite.url,
+    '',
+    `The link expires in ${invite.expiresInDays} days and can be used once.`,
+    'If you were not expecting this invitation, ignore this message — the link',
+    'does nothing until someone sets a password with it, and it will expire.',
+    '',
+    '— Al Haramain Reservation',
+  ].join('\n');
+
+  const response = await fetch(RESEND_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: FROM_ADMIN,
+      to: [invite.to],
+      subject: 'Your Al Haramain Reservation admin invitation',
+      text,
+    }),
+  });
+
+  if (!response.ok) {
+    // The body is Resend's own diagnostic — an unverified sending domain, a
+    // rejected recipient — and it goes to `wrangler tail`, not to the browser.
+    console.error(
+      `invite email failed: ${response.status} ${await response.text()}`,
+    );
+    throw new Error('The invitation email could not be sent.');
   }
 }

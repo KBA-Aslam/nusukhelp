@@ -599,6 +599,17 @@ SQLite has no `DECIMAL`; `REAL` is floating-point and accumulates drift across t
 
 `integer` Unix seconds, UTC. Displayed in `Asia/Riyadh`.
 
+> **`reviews.created_at` and `enquiries.created_at` are in milliseconds, and
+> this is a known defect — §19 open item 21.** Phase 6 writes `Date.now()`
+> rather than `Math.floor(Date.now() / 1000)` in `insertReview` and
+> `insertEnquiry`. It is self-consistent today, because the rate-limit
+> comparison and `/reviews`'s `new Date(review.createdAt)` both read it back as
+> milliseconds, so nothing is visibly wrong. It matters from Phase 8 onward:
+> `admin_invites`, `login_attempts` and Better Auth's four tables all store
+> genuine seconds, so the database now holds two different units in columns of
+> the same name and type. Do not compare or copy a timestamp between the two
+> groups, and fix item 21 before anything in Phase 10 joins across them.
+
 ### Lookup tables, not enums
 
 Room types, meal plans, service types, hotel categories, hotels, and payment methods are **editable lookup tables**, because the admin needs to add options at runtime. Hardcoded enums cannot grow, and retrofitting once historical rows reference enum strings is painful.
@@ -1366,6 +1377,104 @@ Login rate limit: 5 attempts per 15 minutes per IP hash, generic failure message
 
 Two-factor authentication is deferred to v2, once meaningful financial history exists. Better Auth supports it as a plugin.
 
+### Phase 8 rulings — where the build departs from the section above
+
+Phase 8 is built, deployed and pinned to **Better Auth 1.7**. Seven things had
+to be decided that this section did not settle, and one of them changes the §8
+schema.
+
+**1 — The auth tables are Better Auth 1.7's, not §8's listing.** §8 was written
+before the version was pinned, and its four auth tables are a *subset* of what
+the library actually writes. The Drizzle adapter builds every insert from Better
+Auth's internal model and runs `checkMissingFields` first, which throws
+`The field "x" does not exist in the "y" Drizzle schema` the moment a column it
+wants is absent — so a subset is not a smaller schema, it is a broken one. The
+additions, all in migration `0001_phase8_auth.sql`:
+
+- `account.issuer` — 1.7 namespaces credentials by issuer (`local:credential`
+  for a password account) and enforces a unique index on `(issuer, account_id)`.
+- `account.access_token`, `refresh_token`, `id_token`,
+  `access_token_expires_at`, `refresh_token_expires_at`, `scope` — unused; this
+  project has no social sign-in and none is planned. They exist because the
+  adapter writes the whole account model.
+- `verification.updated_at` — required, with an `onUpdate` default.
+
+The timestamp columns on these four tables are declared
+`integer(..., { mode: 'timestamp' })` in Drizzle. **That is not a change of
+storage format**: `timestamp` mode is an integer column holding Unix seconds,
+exactly §8's convention, with a `Date` on the TypeScript side. Better Auth hands
+the adapter `Date` objects, so a plain `integer()` would fail to bind. The
+migration's SQL is identical either way.
+
+**2 — Two tables §8 does not list.** `login_attempts` (see ruling 4) and, on
+`admin_invites`, two columns beyond §8: `name`, so the invitation can address
+the person and pre-fill their account, and `revoked_at`, so an invitation can be
+withdrawn before it is used and so re-inviting the same address kills the
+earlier link rather than leaving two live.
+
+**3 — Better Auth's HTTP endpoints are not mounted, and accepting an invite
+does not go through sign-up.** There is no `app/api/auth/[...all]/route.ts`.
+Nothing needs one: §4 requires all admin mutations to be Server Actions, and
+sign-in, sign-out and invite acceptance all call `auth.api.*` in process, with
+the `nextCookies` plugin handling the cookies. No Better Auth client is created
+anywhere, so nothing on the browser side addresses those URLs.
+
+Mounting it would have a specific cost. The §12 login rate limit lives in the
+sign-in server action, so a reachable `POST /api/auth/sign-in/email` would be a
+second door to the same check without it — which makes the limit decorative.
+The route was built, deployed, and then removed once that was noticed; the
+first deploy of this phase had it, and the endpoint answered `401` to a bogus
+sign-in with no limit applied.
+
+Sign-up is separately closed by `emailAndPassword.disableSignUp`, at the library
+level rather than the routing level, so it stays closed however it is reached —
+including from this project's own code. Invite acceptance therefore writes the
+account through Better Auth's internal adapter, hashing with `ctx.password.hash`
+so the stored value is exactly what the sign-in verifier expects.
+
+**4 — The login rate limit is this project's, not Better Auth's.** §12 asks for
+five attempts per fifteen minutes *per IP hash*. Better Auth's built-in limiter
+defaults to process memory — per-isolate in a Worker, and therefore not a limit
+— and its database mode keys on the raw address, which §15 says this project
+does not store. So it is switched off and replaced by `login_attempts`: one row
+per salted hash, a fixed fifteen-minute window reset in place, cleared on a
+successful sign-in. The row is reused rather than deleted, so no cleanup job has
+to exist. Failing closed has one deliberate exception: with no
+`CF-Connecting-IP` at all — which happens only off Cloudflare, in `next dev` —
+the limit is skipped rather than applied to a shared bucket. A *missing*
+`IP_HASH_SALT` on a real deploy refuses the sign-in, as everywhere else.
+
+**5 — `/admin/*` gets a nonce-based CSP.** `next.config.ts` had recorded that
+Phase 8 would change the calculation, and it has. The public site keeps
+`script-src 'self' 'unsafe-inline'` because a nonce forces per-request rendering
+and those pages are cache-served; the admin panel is authenticated and dynamic
+already, and is the only surface where a stored-XSS bug reaches booking data. The
+policy is generated per response in `middleware.ts` and set on both the request
+(which is how Next stamps the nonce onto its own scripts) and the response.
+`next.config.ts`'s header rules now exclude `/admin` from the static CSP, because
+two `Content-Security-Policy` headers on one response are enforced as their
+intersection — a policy nobody wrote.
+
+**6 — Deactivation is checked in three places, and the last admin is
+protected.** Deactivating an account revokes its session rows immediately; the
+sign-in action refuses a deactivated user even with the right password; and
+`getSessionUser` re-checks `isActive` on every request. Separately, the users
+screen refuses to demote or deactivate the last active admin — nothing could
+undo it, since there is no public sign-up and the seed script needs the database
+credentials.
+
+**7 — Roles live in `src/lib/roles.ts`, not in the schema file.** The list is
+needed by the Drizzle schema, by the server-side guards, and by client
+components that render a role badge or selector. Declaring it in `db/schema.ts`
+would pull Drizzle into a browser bundle, so the dependency runs the other way:
+`db/schema.ts` imports the list and re-exports it. The §12 permission table
+itself is transcribed once, in `src/lib/permissions.ts`, and both the UI and the
+server actions read from that one map.
+
+There is no "forgot password" flow, deliberately. Recovery is an admin
+re-inviting from `/admin/settings/users`, which is one code path instead of two
+and leaves every account creation and recovery visible in `admin_invites`.
+
 ---
 
 ## 13. Admin features
@@ -1860,7 +1969,7 @@ of that script once the translation lands.**
 
 ### Release 2 — Admin panel
 
-**Phase 8 — Auth.** Better Auth with D1, login, middleware guard, invite flow, users settings, seed first admin. Also rebuilds `reviews` and `enquiries` to add the two moderation foreign keys deferred out of Phase 2 (§8, *Deferred constraints*).
+**Phase 8 — Auth.** Better Auth with D1, login, middleware guard, invite flow, users settings, seed first admin. Also rebuilds `reviews` and `enquiries` to add the two moderation foreign keys deferred out of Phase 2 (§8, *Deferred constraints*). **Built and deployed.** Migration `0001_phase8_auth.sql` is applied local and remote, and both foreign keys are live. The departures from §8 and §12 that the build forced — chiefly Better Auth 1.7's own column set, this project's own login rate limiter, and a nonce-based CSP for `/admin/*` — are recorded as *Phase 8 rulings* in §12.
 
 **Phase 9 — Foundations.** Lookup tables with seed data, company settings page, agencies CRUD.
 
@@ -1904,6 +2013,8 @@ of that script once the translation lands.**
 | 14 | Decide on Cloudflare's managed `robots.txt` — it prepends an AI-crawler block ahead of ours (see §17 below) | Client | Go-live | The combined file as served today; our `/admin` disallow is effective either way |
 | 15 | Decide on HSTS `preload` — a near-irreversible commitment for every future subdomain (§15) | Client | Go-live | `max-age=63072000; includeSubDomains`, no `preload` |
 | ~~16~~ | ~~Turn `workers_dev` off in `wrangler.jsonc`~~ | Build | — | **Done.** `workers_dev: false` is deployed. `nusukhelp.lazykba.workers.dev` now returns 404 — the hostname still resolves on Cloudflare's shared addresses, but no Worker is attached — while both custom domains serve 200. The preview URL was how every phase got verified over HTTPS, which is why it deliberately outlived Phase 7 |
+| 21 | Normalise `reviews.created_at` and `enquiries.created_at` to Unix **seconds** (§8, *Timestamps*) — three call sites plus a guarded one-off `UPDATE … SET created_at = created_at / 1000 WHERE created_at > 100000000000` | Build | **Phase 10** | Nothing. Both columns are self-consistent in milliseconds today and render correctly; the risk is a Phase 10 join or comparison against a seconds column. Found in Phase 8 while inspecting live data — deliberately *not* fixed in that commit, because migrating a live table holding a real customer review is a change the client should authorise rather than one that arrives inside an unrelated phase |
+| 20 | Seed the first admin account — `npm run seed:admin:remote` (docs/SECRETS.md §6) | Client | **Use of the panel** | Nothing. The code is deployed and the migration applied; the panel simply has no accounts, and by design it cannot make itself one |
 | ~~19~~ | ~~End-to-end verification of both public forms on the live site~~ | Build | — | **Done.** A review submitted through the real form stored as `pending`, was absent from a render that had seen the row, appeared only after approval — `22:26:44Z` approved, `23:22:01Z` visible, the ISR window turning `HIT → STALE → HIT` — and carried no reviewer email in HTML, JSON or structured data. An enquiry stored and notified. Both test rows deleted; the guards fail closed. Tagged `release-1-complete` |
 
 Item 1 now covers two things, and they go to the advisor **together**. The
