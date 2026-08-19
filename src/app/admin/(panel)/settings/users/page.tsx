@@ -6,6 +6,7 @@ import { listStaffAccounts } from '@/db/queries/users';
 import { requirePageAccess } from '@/lib/auth-guard';
 import { formatDate } from '@/lib/format';
 import { ROLE_LABEL } from '@/lib/roles';
+import { fromSeconds, nowSeconds } from '@/lib/time';
 
 import {
   ActiveForm,
@@ -38,7 +39,7 @@ export default async function UsersPage() {
     listInvites(),
   ]);
 
-  const now = Math.floor(Date.now() / 1000);
+  const now = nowSeconds();
 
   return (
     <>
@@ -162,10 +163,10 @@ function inviteDetail(
   const by = invite.invitedByName ? ` by ${invite.invitedByName}` : '';
 
   if (state === 'accepted' && invite.acceptedAt) {
-    return `Accepted ${formatDate(new Date(invite.acceptedAt * 1000), 'en')} · sent${by}`;
+    return `Accepted ${formatDate(fromSeconds(invite.acceptedAt), 'en')} · sent${by}`;
   }
   if (state === 'pending') {
-    return `Expires ${formatDate(new Date(invite.expiresAt * 1000), 'en')} · sent${by}`;
+    return `Expires ${formatDate(fromSeconds(invite.expiresAt), 'en')} · sent${by}`;
   }
-  return `Sent ${formatDate(new Date(invite.createdAt * 1000), 'en')}${by}`;
+  return `Sent ${formatDate(fromSeconds(invite.createdAt), 'en')}${by}`;
 }

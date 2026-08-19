@@ -26,6 +26,7 @@ import {
 import { ROLE_LABEL, type Role } from '@/lib/roles';
 import { SITE_URL } from '@/lib/site';
 import { inviteSchema } from '@/lib/validation/auth';
+import { nowSeconds } from '@/lib/time';
 
 /**
  * `/admin/settings/users` — invite staff, deactivate accounts (§4, §12).
@@ -111,7 +112,7 @@ export async function inviteUserAction(
       };
     }
 
-    const now = Math.floor(Date.now() / 1000);
+    const now = nowSeconds();
     const token = generateInviteToken();
     const origin = await requestOrigin();
 
@@ -169,7 +170,7 @@ export async function revokeInviteAction(
       return { error: 'That invitation could not be found.', success: null };
     }
 
-    await revokeInvite(id, Math.floor(Date.now() / 1000));
+    await revokeInvite(id, nowSeconds());
 
     revalidatePath(PATH);
     return { error: null, success: 'Invitation withdrawn.' };

@@ -1,6 +1,7 @@
 import { and, count, eq, gte } from 'drizzle-orm';
 
 import type { EnquiryAudience } from '@/lib/validation/enquiry';
+import { nowSeconds } from '@/lib/time';
 
 import { getDb } from '../index';
 import { enquiries } from '../schema';
@@ -78,7 +79,7 @@ export async function insertEnquiry(input: {
   const row = {
     id: crypto.randomUUID(),
     ...input,
-    createdAt: Date.now(),
+    createdAt: nowSeconds(),
   };
 
   await db.insert(enquiries).values(row);

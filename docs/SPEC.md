@@ -599,16 +599,36 @@ SQLite has no `DECIMAL`; `REAL` is floating-point and accumulates drift across t
 
 `integer` Unix seconds, UTC. Displayed in `Asia/Riyadh`.
 
-> **`reviews.created_at` and `enquiries.created_at` are in milliseconds, and
-> this is a known defect — §19 open item 21.** Phase 6 writes `Date.now()`
-> rather than `Math.floor(Date.now() / 1000)` in `insertReview` and
-> `insertEnquiry`. It is self-consistent today, because the rate-limit
-> comparison and `/reviews`'s `new Date(review.createdAt)` both read it back as
-> milliseconds, so nothing is visibly wrong. It matters from Phase 8 onward:
-> `admin_invites`, `login_attempts` and Better Auth's four tables all store
-> genuine seconds, so the database now holds two different units in columns of
-> the same name and type. Do not compare or copy a timestamp between the two
-> groups, and fix item 21 before anything in Phase 10 joins across them.
+**The rule is enforced, not merely stated.** Two things keep it true:
+
+- **`src/lib/time.ts` is the only clock.** `nowSeconds()` stamps every row and
+  `fromSeconds()` reads one back for display. No `Date.now()` arithmetic appears
+  anywhere else in `src/` — a unit conversion written out at a dozen call sites
+  is one that will be wrong at one of them. Drizzle columns declared
+  `{ mode: 'timestamp' }` (the six on the Better Auth tables) are the exception
+  in TypeScript only: they take a `Date` and store the same Unix seconds.
+- **`npm run check:timestamps:remote`** walks every table in the live database
+  and fails if any `INTEGER` column named `*_at` (plus `window_start`) holds a
+  value above 1e11 — the boundary between seconds and milliseconds, which is the
+  year 5138 in one unit and March 1973 in the other. It discovers its columns
+  from `sqlite_master` and `PRAGMA table_info` rather than from a list, so a
+  table added in a later phase is checked without anyone remembering to add it.
+  **Run it after any phase that adds a table.** If a new time column is named
+  something other than `*_at`, add it to `EXTRA_COLUMNS` in the script — the
+  failure mode of the naming convention is a check silently not happening.
+
+> **This was a real defect, found in Phase 8 and fixed before Phase 9** (§19
+> item 21, now closed). Phase 6 wrote a bare `Date.now()` in `insertReview` and
+> `insertEnquiry`, so `reviews.created_at` and `enquiries.created_at` held
+> milliseconds. Nothing looked wrong, because the two places that read those
+> columns — the rate-limit comparison and `/reviews`'s
+> `new Date(review.createdAt)` — treated them as milliseconds too. Phase 8 is
+> what made it matter: `admin_invites`, `login_attempts` and Better Auth's four
+> tables all store genuine seconds, leaving two different units in columns of
+> the same name and the same type, one join away from being silently wrong.
+> Migration `0002_timestamps_to_seconds.sql` converted the stored values and is
+> idempotent — every statement is guarded on the value still looking like
+> milliseconds.
 
 ### Lookup tables, not enums
 
@@ -2013,7 +2033,7 @@ of that script once the translation lands.**
 | 14 | Decide on Cloudflare's managed `robots.txt` — it prepends an AI-crawler block ahead of ours (see §17 below) | Client | Go-live | The combined file as served today; our `/admin` disallow is effective either way |
 | 15 | Decide on HSTS `preload` — a near-irreversible commitment for every future subdomain (§15) | Client | Go-live | `max-age=63072000; includeSubDomains`, no `preload` |
 | ~~16~~ | ~~Turn `workers_dev` off in `wrangler.jsonc`~~ | Build | — | **Done.** `workers_dev: false` is deployed. `nusukhelp.lazykba.workers.dev` now returns 404 — the hostname still resolves on Cloudflare's shared addresses, but no Worker is attached — while both custom domains serve 200. The preview URL was how every phase got verified over HTTPS, which is why it deliberately outlived Phase 7 |
-| 21 | Normalise `reviews.created_at` and `enquiries.created_at` to Unix **seconds** (§8, *Timestamps*) — three call sites plus a guarded one-off `UPDATE … SET created_at = created_at / 1000 WHERE created_at > 100000000000` | Build | **Phase 10** | Nothing. Both columns are self-consistent in milliseconds today and render correctly; the risk is a Phase 10 join or comparison against a seconds column. Found in Phase 8 while inspecting live data — deliberately *not* fixed in that commit, because migrating a live table holding a real customer review is a change the client should authorise rather than one that arrives inside an unrelated phase |
+| ~~21~~ | ~~Normalise `reviews.created_at` and `enquiries.created_at` to Unix **seconds**~~ | Build | — | **Done, as a standalone change between Phase 8 and Phase 9.** Found in Phase 8 while inspecting live data and deliberately left out of that commit — migrating a live table holding a real customer review is not something to bundle into an unrelated phase. The client ruled it a live data-integrity bug that gets more expensive with every phase that queries by date, and fixed it on its own. Migration `0002` converted the stored values (guarded, idempotent); `src/lib/time.ts` is now the only clock and no `Date.now()` arithmetic remains in `src/`; `npm run check:timestamps:*` asserts the invariant across **every** table, discovering its columns from the database rather than a list. The checker was confirmed to fail on the real defect before the migration was applied, and to pass after. The one affected row — a genuine pending review — kept its value and now reads `2026-08-19 00:53:19` UTC |
 | 20 | Seed the first admin account — `npm run seed:admin:remote` (docs/SECRETS.md §6) | Client | **Use of the panel** | Nothing. The code is deployed and the migration applied; the panel simply has no accounts, and by design it cannot make itself one |
 | ~~19~~ | ~~End-to-end verification of both public forms on the live site~~ | Build | — | **Done.** A review submitted through the real form stored as `pending`, was absent from a render that had seen the row, appeared only after approval — `22:26:44Z` approved, `23:22:01Z` visible, the ISR window turning `HIT → STALE → HIT` — and carried no reviewer email in HTML, JSON or structured data. An enquiry stored and notified. Both test rows deleted; the guards fail closed. Tagged `release-1-complete` |
 

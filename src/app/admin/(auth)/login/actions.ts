@@ -12,6 +12,7 @@ import { getAuth } from '@/lib/auth';
 import { clientIpFromHeaders, hashIp } from '@/lib/request-guards';
 import { ipHashSalt } from '@/lib/server-env';
 import { signInSchema } from '@/lib/validation/auth';
+import { nowSeconds } from '@/lib/time';
 
 /**
  * Sign in (§12).
@@ -59,7 +60,7 @@ export async function signInAction(
   }
 
   const ipHash = await hashIp(ip, salt);
-  const now = Math.floor(Date.now() / 1000);
+  const now = nowSeconds();
 
   if (ipHash) {
     const limit = await checkLoginLimit(ipHash, now);

@@ -12,6 +12,7 @@ import {
   type PublicReview,
 } from '@/db/queries/reviews';
 import { formatDate } from '@/lib/format';
+import { fromSeconds } from '@/lib/time';
 import { pageMetadata } from '@/lib/metadata';
 
 /**
@@ -159,7 +160,7 @@ function ReviewCard({
           ) : null}
         </p>
         <p className="mt-1 text-xs text-muted">
-          <Bidi>{formatDate(new Date(review.createdAt), locale)}</Bidi>
+          <Bidi>{formatDate(fromSeconds(review.createdAt), locale)}</Bidi>
         </p>
       </footer>
     </li>

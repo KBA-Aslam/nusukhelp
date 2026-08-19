@@ -413,6 +413,26 @@ secret that signs people out at random.
 
 ---
 
+## Between 8 and 9 — timestamp normalisation ✅ done
+
+A standalone change, not part of either phase. Phase 6 stored
+`reviews.created_at` and `enquiries.created_at` in milliseconds where §8 calls
+for Unix seconds; it was invisible until Phase 8 added tables that store real
+seconds. Migration `0002` converted the data, `src/lib/time.ts` became the only
+clock, and this is now checkable:
+
+```bash
+npm run check:timestamps:remote
+```
+
+**Run that after any phase that adds a table.** It walks every table in the live
+database and fails if a timestamp column holds milliseconds. It finds its
+columns from the schema in the database, so a new table is covered
+automatically — unless its time column is named something other than `*_at`, in
+which case add the name to `EXTRA_COLUMNS` in the script.
+
+---
+
 ## Phase 9 — Foundations
 
 ```

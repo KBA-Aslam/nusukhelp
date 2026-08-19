@@ -5,13 +5,14 @@ import { sendEnquiryNotification } from '@/lib/email';
 import {
   HONEYPOT_FIELD,
   RATE_LIMIT_MAX,
-  RATE_LIMIT_WINDOW_MS,
+  RATE_LIMIT_WINDOW_SECONDS,
   clientIp,
   hashIp,
   honeypotTripped,
   localeFromReferer,
 } from '@/lib/request-guards';
 import { ipHashSalt, turnstileSecret } from '@/lib/server-env';
+import { nowSeconds } from '@/lib/time';
 import { TURNSTILE_FIELD, verifyTurnstile } from '@/lib/turnstile';
 import { enquirySchema } from '@/lib/validation/enquiry';
 
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
 
   const recent = await countEnquiriesByIpSince(
     ipHash,
-    Date.now() - RATE_LIMIT_WINDOW_MS,
+    nowSeconds() - RATE_LIMIT_WINDOW_SECONDS,
   );
   if (recent >= RATE_LIMIT_MAX) return fail('rate_limited', 429);
 

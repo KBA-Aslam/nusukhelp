@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { findLiveInviteByHash } from '@/db/queries/invites';
 import { hashInviteToken } from '@/lib/invites';
 import { ROLE_LABEL } from '@/lib/roles';
+import { nowSeconds } from '@/lib/time';
 
 import { AcceptInviteForm } from './accept-invite-form';
 
@@ -36,7 +37,7 @@ export default async function AcceptInvitePage({
 
   const invite = await findLiveInviteByHash(
     await hashInviteToken(token),
-    Math.floor(Date.now() / 1000),
+    nowSeconds(),
   );
 
   if (!invite) {

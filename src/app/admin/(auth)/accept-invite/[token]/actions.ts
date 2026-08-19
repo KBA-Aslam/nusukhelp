@@ -9,6 +9,7 @@ import { findUserByEmail } from '@/db/queries/users';
 import { getAuth } from '@/lib/auth';
 import { hashInviteToken } from '@/lib/invites';
 import { acceptInviteSchema } from '@/lib/validation/auth';
+import { nowSeconds } from '@/lib/time';
 
 /**
  * Accepting an invitation — steps 5 and 6 of §12.
@@ -65,7 +66,7 @@ export async function acceptInviteAction(
   // established that the link was live when it was loaded; this action is a
   // POST that can be made without ever loading it, and the invite may have been
   // revoked or expired in between (§12, *Enforcement*).
-  const now = Math.floor(Date.now() / 1000);
+  const now = nowSeconds();
   const invite = await findLiveInviteByHash(await hashInviteToken(token), now);
 
   if (!invite) {

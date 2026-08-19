@@ -7,9 +7,20 @@
  * check the other keeps.
  */
 
-/** Reviews and enquiries alike: 3 submissions per IP hash per 24 hours. */
+/**
+ * Reviews and enquiries alike: 3 submissions per IP hash per 24 hours.
+ *
+ * **Seconds**, because the window is compared against `reviews.created_at` and
+ * `enquiries.created_at`, and every timestamp in this database is Unix seconds
+ * (§8). It was `RATE_LIMIT_WINDOW_MS` until §19 item 21: the columns held
+ * milliseconds, the comparison was in milliseconds, and the two wrongs agreed
+ * with each other well enough that the rate limit worked and nothing looked
+ * amiss. Renaming the constant rather than just changing its value is the
+ * point — a stale `_MS` suffix on a seconds value is how the next person
+ * reintroduces the bug.
+ */
 export const RATE_LIMIT_MAX = 3;
-export const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+export const RATE_LIMIT_WINDOW_SECONDS = 24 * 60 * 60;
 
 /**
  * The client's address, from Cloudflare's own header.

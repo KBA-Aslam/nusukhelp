@@ -1,5 +1,7 @@
 import { and, avg, count, desc, eq, gte } from 'drizzle-orm';
 
+import { nowSeconds } from '@/lib/time';
+
 import { getDb, getDbForRender } from '../index';
 import { reviews } from '../schema';
 
@@ -150,6 +152,6 @@ export async function insertReview(input: {
   await db.insert(reviews).values({
     id: crypto.randomUUID(),
     ...input,
-    createdAt: Date.now(),
+    createdAt: nowSeconds(),
   });
 }
