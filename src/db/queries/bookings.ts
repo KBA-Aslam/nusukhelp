@@ -286,6 +286,26 @@ export async function listBookings(
 }
 
 /**
+ * How many drafts are waiting, for the banner on the booking list.
+ *
+ * §9.10 keeps drafts out of every ordinary view, which is right — an unfinished
+ * booking is not a booking. But "out of the view" turned into "gone" the first
+ * time someone used the form: the draft was saved, and the person who saved it
+ * had no way of knowing, because the list they came back to did not mention it.
+ * A count is what makes the filter discoverable, and the work findable.
+ */
+export async function countDraftBookings(): Promise<number> {
+  const db = getDb();
+
+  const [row] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(bookings)
+    .where(eq(bookings.status, 'draft'));
+
+  return Number(row?.count ?? 0);
+}
+
+/**
  * The §13.8 agency profile figures, which Phase 9 shipped a placeholder for
  * because this table did not exist yet.
  *

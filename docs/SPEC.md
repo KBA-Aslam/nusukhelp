@@ -1581,6 +1581,8 @@ Filter by: status, payment status, date range (booking / check-in / check-out), 
 
 A **Drafts** filter lists draft bookings, with those untouched for 30 days marked as stale for manual deletion (§9.10). Nothing here deletes on a schedule.
 
+**The default view names the count.** *"1 unfinished draft — Resume"*, linking straight to the filter. Without it the filter is only reachable by opening a select and choosing an option whose existence you would have to already know about, and a draft nobody can find is a draft that was lost — the outcome §9.10 is written to prevent, reached through the interface rather than through a purge. Found in Phase 10's first device test: the autosave worked, the row was on the server, and the person who created it reported it as gone.
+
 ### 13.7 Reports
 
 **Monthly** — bookings, rooms, guests, completed, upcoming, cancelled, check-ins, check-outs, booking value, received, outstanding.
@@ -1728,6 +1730,19 @@ query parameter, so there is one code path and no chance of two definitions of
 "draft" drifting apart. Drafts untouched for 30 days carry a **Stale** badge.
 Nothing on that screen deletes on a schedule, and nothing should be added that
 does: the badge is an invitation to a person, not a countdown.
+
+> **Amended after the first device test, and the amendment is the lesson.** The
+> filter alone was not enough. A draft autosaved correctly on an Android phone,
+> the browser was closed mid-form, and the booking list said nothing about it —
+> so the row sat on the server while the person who created it reported their
+> work as lost. Nothing had deleted anything; the interface had simply not
+> mentioned it, which from the seat of the person using it is the same event.
+> The list now shows the count and a **Resume** link on the default view, a
+> draft opens back into the form in `create` mode with autosave still running,
+> and its button says *Resume* rather than *Edit*. **Excluding drafts from a
+> view is correct; leaving them unmentioned is not** — the same instinct that
+> forbids the TTL purge, applied to what the screen says rather than to what the
+> database does.
 
 **5 — Record payment and Download PDF are absent from the detail screen, not
 disabled.** §13.4 lists both among the actions; they belong to Phases 11 and 12.

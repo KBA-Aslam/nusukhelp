@@ -84,8 +84,11 @@ export default async function BookingDetailPage({
         }
         action={
           canEdit ? (
+            // "Resume" on a draft, because that is what it does — the form
+            // reopens with autosave running and ends in Confirm. "Edit" reads
+            // like a change to something finished.
             <Link href={`/admin/bookings/${id}/edit`} className={BUTTON_SECONDARY}>
-              Edit
+              {booking.status === 'draft' ? 'Resume' : 'Edit'}
             </Link>
           ) : undefined
         }

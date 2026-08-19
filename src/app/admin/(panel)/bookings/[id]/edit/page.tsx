@@ -23,6 +23,14 @@ export const metadata: Metadata = { title: 'Edit booking' };
  * A cancelled booking is refused outright, here *and* in the action: it is a
  * historical record with its payments intact, and editing it would rewrite what
  * was cancelled.
+ *
+ * ## A draft opens in `create` mode, not `edit`
+ *
+ * Because resuming a draft is not editing a booking. The form has to keep
+ * autosaving on every step change (§9.10) and has to end in **Confirm**, which
+ * is what allocates the number — `edit` mode does neither, since a confirmed
+ * booking must go through `saveBookingAction` and the §9.3 guards. Same route,
+ * same component, and the booking's own status decides which of the two it is.
  */
 export default async function EditBookingPage({
   params,
@@ -87,18 +95,24 @@ export default async function EditBookingPage({
     notes: booking.notes ?? '',
   };
 
+  const isDraft = booking.status === 'draft';
+
   return (
     <>
       <PageHeading
-        title={`Edit ${booking.bookingNumber ?? 'draft'}`}
-        description="Changing the value changes what the invoice says next time it is downloaded — the document is not stored."
+        title={isDraft ? 'Resume draft' : `Edit ${booking.bookingNumber}`}
+        description={
+          isDraft
+            ? 'Picks up where you left off. It takes a number when you confirm it.'
+            : 'Changing the value changes what the invoice says next time it is downloaded — the document is not stored.'
+        }
       />
 
       <BookingForm
         bookingId={id}
         initial={initial}
         options={options}
-        mode="edit"
+        mode={isDraft ? 'create' : 'edit'}
       />
     </>
   );

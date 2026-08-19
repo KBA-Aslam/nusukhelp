@@ -12,7 +12,11 @@ import {
   Pill,
   SELECT,
 } from '@/components/admin/ui';
-import { listBookings, type BookingSummary } from '@/db/queries/bookings';
+import {
+  countDraftBookings,
+  listBookings,
+  type BookingSummary,
+} from '@/db/queries/bookings';
 import { listAgencies } from '@/db/queries/agencies';
 import { requirePageAccess } from '@/lib/auth-guard';
 import { formatDate, formatSAR } from '@/lib/format';
@@ -46,6 +50,16 @@ export const metadata: Metadata = { title: 'Bookings' };
  * **Nothing on this page deletes anything on a schedule.** The stale badge is
  * an invitation to a human, not a countdown — silently removing someone's
  * half-finished work is worse than leaving clutter in a list (§9.10).
+ *
+ * ## Why the draft count is on the default view
+ *
+ * Because hiding a draft and losing it are the same experience. The first time
+ * this screen was used on a phone, a draft autosaved correctly, the browser was
+ * closed, and the person came back to a list that said nothing about it — the
+ * row was on the server the whole time and reported as lost, which is the
+ * failure §9.10 exists to prevent, arriving through the interface instead of
+ * through a purge. Excluding drafts from the list is still right; leaving them
+ * unmentioned was not.
  *
  * ## The filters are a GET
  *
@@ -115,7 +129,7 @@ export default async function BookingsPage({
       ? params.dateField
       : 'booking';
 
-  const [rows, agencies] = await Promise.all([
+  const [rows, agencies, draftCount] = await Promise.all([
     listBookings({
       search: params.q,
       status,
@@ -129,6 +143,7 @@ export default async function BookingsPage({
       to: dateStringToSeconds(params.to),
     }),
     listAgencies(),
+    countDraftBookings(),
   ]);
 
   const canCreate = roleCan(user.role, 'createBookings');
@@ -152,6 +167,24 @@ export default async function BookingsPage({
           ) : undefined
         }
       />
+
+      {/* One tap to the unfinished work, on the screen people actually land on
+          — the Status select below reaches the same view, but nobody opens a
+          select to look for something they do not know is there. */}
+      {!showingDrafts && draftCount > 0 ? (
+        <Link
+          href="/admin/bookings?status=draft"
+          className="mb-5 flex min-h-11 flex-wrap items-center justify-between gap-2 rounded-[2px] border border-brass/40 bg-brass/5 px-4 py-3 text-sm text-ink"
+        >
+          <span>
+            <strong>
+              {draftCount} unfinished {draftCount === 1 ? 'draft' : 'drafts'}
+            </strong>{' '}
+            saved and waiting to be finished.
+          </span>
+          <span className="font-semibold text-brass-ink">Resume →</span>
+        </Link>
+      ) : null}
 
       <form method="get" className="mb-5 space-y-3">
         <div className="flex flex-wrap items-end gap-3">
