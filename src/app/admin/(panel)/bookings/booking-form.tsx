@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import {
-  BUTTON_DANGER,
   BUTTON_PRIMARY,
   BUTTON_SECONDARY,
   Card,
@@ -18,6 +17,7 @@ import { formatSAR } from '@/lib/format';
 import { dateStringToSeconds } from '@/lib/time';
 import type { BookingValues } from '@/lib/validation/booking';
 
+import { WarningPanel } from '@/components/admin/warning-panel';
 import type { FieldErrors } from '@/lib/action-result';
 
 import {
@@ -469,8 +469,9 @@ export function BookingForm({
           <WarningPanel
             warnings={warnings}
             pending={pending}
-            onCancel={() => setWarnings(null)}
+            proceedLabel="Save anyway"
             onProceed={() => submit(true)}
+            onCancel={() => setWarnings(null)}
           />
         </div>
       ) : null}
@@ -1397,51 +1398,6 @@ function LineCard({
   );
 }
 
-/**
- * The §9.3 warnings.
- *
- * Shown, acknowledged, and then the save proceeds — never a block. The two
- * cases are an overpayment that may need refunding and an edit to a completed
- * booking that will move a closed month's figures, and both are things a person
- * sometimes means to do.
- */
-function WarningPanel({
-  warnings,
-  pending,
-  onCancel,
-  onProceed,
-}: {
-  warnings: string[];
-  pending: boolean;
-  onCancel: () => void;
-  onProceed: () => void;
-}) {
-  return (
-    <div
-      role="alert"
-      className="rounded-[2px] border border-brass/40 bg-brass/5 px-4 py-3.5"
-    >
-      <ul className="space-y-1.5 text-sm text-ink">
-        {warnings.map((warning) => (
-          <li key={warning}>{warning}</li>
-        ))}
-      </ul>
-      <div className="mt-3 flex flex-wrap gap-2.5">
-        <button
-          type="button"
-          onClick={onProceed}
-          disabled={pending}
-          className={BUTTON_DANGER}
-        >
-          Save anyway
-        </button>
-        <button type="button" onClick={onCancel} className={BUTTON_SECONDARY}>
-          Go back
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function Row({
   label,

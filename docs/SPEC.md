@@ -1850,11 +1850,64 @@ finds the payment already reversed it answers *"That payment was already
 reversed"* as a **success**: from where the person is sitting the thing they
 asked for is true, and reporting a failure would invite them to try again.
 
-**Not yet verified on a device, and Phase 12 depends on this being right.** The
-figures the invoice PDF renders are the ones this phase writes. §19 item 20
-still stands — no build phase can sign in to the panel — so the §20.6 checks on
-the record panel, the warning round trip and the reversal history are the
-client's to run, against **AHR-2026-00001** (§19 item 22).
+**7 — Device-tested, and the amendment is the lesson: an answer nobody sees is
+not an answer.** The client ran the sequence against **AHR-2026-00001** and
+reported two failures — a reversal that "did not recalculate" and an edit that
+"saved silently". The audit trail says otherwise on both counts, and that is the
+finding. The reversal logged `amountPaid 1,675 → 1,175`, `paid →
+partially_paid`, exactly as designed; the edit logged nothing at all, because
+the action correctly refused it and returned the §9.3 overpayment warning. **The
+server was right twice and inaudible twice.**
+
+> The warning panel rendered at the top of a seven-step form while **Save
+> changes** sat in the sticky bar at the bottom of a phone screen. Nothing
+> scrolled, nothing took focus, and the bar said nothing — so the tap appeared
+> to do nothing, which reads as *saved*. Meanwhile the reversal's own
+> confirmation sentence, *"Payment reversed. Paid is now SAR 1,175"*, was
+> computed by the action and discarded by the form, leaving a reversal that had
+> worked indistinguishable from one that had failed.
+>
+> Both are now one component. `components/admin/warning-panel.tsx` scrolls
+> itself into view, takes focus, announces through `role="alert"`, and states
+> **"Nothing has been saved yet"** — because the failure it replaces was someone
+> believing the opposite. `PaymentsSection` owns a single status line that both
+> recording and reversing write to, so the last thing to happen is the thing the
+> screen describes; previously each component kept its own answer and a stale
+> *"paid in full"* could sit under a money strip that said otherwise.
+>
+> This is the Phase 10 draft lesson again, one layer up. There the rule was
+> *excluding data from a view is correct; leaving it unmentioned is not*. Here
+> it is: **refusing a write is correct; refusing it silently is not.** A
+> confirm-then-repeat design has exactly one hard requirement — that the person
+> sees the sentence they are being asked to confirm — and meeting it is not the
+> caller's business to remember.
+
+**8 — The phase has automated tests, and they exist because nothing else could
+have caught this.** `tsc`, `eslint` and `next build` all passed on the build
+that failed the live test, because both defects were behaviour rather than
+types. `npm test` now runs two suites:
+
+- `tests/payments.test.ts` — the client's own sequence (1,675 booking; 500 in;
+  2,000 warned; 1,175 to settle; the 500 reversed; the booking edited to 500)
+  against **a real D1** through Wrangler's platform proxy, with the real
+  migrations, the real query modules and the real server actions. It asserts the
+  **stored** `amountPaid` and `paymentStatus` at every step, never the return
+  value, and it asserts that a warning writes *nothing*. Persistence goes to a
+  temporary directory, never `.wrangler`, so tests and `npm run dev` never share
+  a database.
+- `tests/warning-visibility.test.tsx` — that the answers reach the screen. Both
+  assertions were confirmed to fail against the unfixed components before the
+  fix was kept, which is the only way to know a test tests anything.
+
+Phase 12 inherits both. The invoice PDF renders the figures this phase writes,
+so the sequence test is what stops a PDF quietly disagreeing with the booking.
+
+**§19 item 20 still stands** — no build phase can sign in to the panel, so device
+QA of the §20.6 checks remains the client's to run, against **AHR-2026-00001**
+(§19 item 22). Note that the live test left that booking with a fourth payment
+of SAR 500 recorded after the reversal, which is why it currently reads *paid*
+at 1,675; reversing it puts the booking back to 1,175 and is itself a one-tap
+check of the fix.
 
 ---
 
@@ -2220,7 +2273,7 @@ of that script once the translation lands.**
 
 **Phase 10 — Bookings.** Full schema. Stepped mobile-first creation form. Rooms and services repeaters. Server-side calculation. Server-side draft autosave on step change. Confirm with atomic numbering. List with search and filters, including the Drafts filter with 30-day stale marking for manual deletion (§9.10). Detail screen. Edit with the section 9.3 guards. Cancel. Audit logging with before/after values. **Built and deployed.** Migration `0005_phase10_bookings.sql` is applied local and remote and creates six tables — `bookings`, `booking_rooms`, `booking_services`, `payments`, `booking_counters`, `audit_log`. `payments` deliberately arrives a phase ahead of its UI so that the derivation has one implementation rather than two; the departures from §8, §13.4 and §20 are recorded as *Phase 10 rulings* in §13. **Device-tested on Android**, which found one defect and one addition: the Drafts filter was not discoverable enough to count as the work being findable (ruling 4), and autosave now runs on a typing debounce as well as on step change (ruling 7). The build itself still cannot sign in to check a screen — accounts are the client's to create (§19 item 20).
 
-**Phase 11 — Payments.** Unlimited instalments recorded against a booking. Derived `amountPaid` and `paymentStatus`, recalculated on payment *and* on booking edit. Reversal with reason. Payment history on the booking detail screen. The table and the derivation already exist (Phase 10 ruling 1); **this phase must call `recalculateBooking` rather than compute either figure itself** (ruling 2). **Built.** No migration — the table shipped a phase early, so there was nothing to add. Recording warns without blocking on an overpayment or a future date, reversal is admin-only and idempotent, and both are logged against the booking so they appear in the one timeline staff read. The departures from §9.4 and §13.4 are recorded as *Phase 11 rulings* in §13. **Device QA is outstanding** (§19 item 20) and runs against the test booking kept for it (§19 item 22).
+**Phase 11 — Payments.** Unlimited instalments recorded against a booking. Derived `amountPaid` and `paymentStatus`, recalculated on payment *and* on booking edit. Reversal with reason. Payment history on the booking detail screen. The table and the derivation already exist (Phase 10 ruling 1); **this phase must call `recalculateBooking` rather than compute either figure itself** (ruling 2). **Built.** No migration — the table shipped a phase early, so there was nothing to add. Recording warns without blocking on an overpayment or a future date, reversal is admin-only and idempotent, and both are logged against the booking so they appear in the one timeline staff read. The departures from §9.4 and §13.4 are recorded as *Phase 11 rulings* in §13. **Device-tested against AHR-2026-00001**, which found two defects — both of them the same defect: the server answered correctly and the answer never reached the screen (ruling 7). The phase now carries the project's first automated tests, running the full money sequence against a real D1 and asserting the stored derived values at every step (ruling 8). Remaining device QA is the client's (§19 items 20 and 22).
 
 **Phase 12 — PDF.** Two type shapes, sanitiser, two separate document components, generation UI, amount-in-words, generation timestamp in the header. Web Share API delivery with download fallback (section 20.2). **Test on a real iPhone before moving on** — verify A4 dimensions, page breaks, and the share sheet. **Test the confidential style specifically for leaks** — inspect extracted PDF text, not just the visual render.
 

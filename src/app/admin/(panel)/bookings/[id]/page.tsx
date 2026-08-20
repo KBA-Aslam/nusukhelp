@@ -30,7 +30,7 @@ import {
   DeleteDraftForm,
   MarkCompletedButton,
 } from './booking-actions';
-import { RecordPaymentPanel, ReversePaymentForm } from './payment-forms';
+import { PaymentsSection, ReversePaymentForm } from './payment-forms';
 
 export const metadata: Metadata = { title: 'Booking' };
 
@@ -257,37 +257,38 @@ export default async function BookingDetailPage({
               : undefined
           }
         >
-          {payments.length === 0 ? (
-            <EmptyState>
-              {canRecordPayment
-                ? 'Nothing received yet.'
-                : booking.status === 'draft'
+          {/* The history is server-rendered; `PaymentsSection` wraps it only so
+              that recording and reversing share one line saying what just
+              happened. Two components moving the same figures must not each
+              keep their own answer. */}
+          <PaymentsSection
+            bookingId={id}
+            balanceDue={balanceDue}
+            canRecord={canRecordPayment}
+            methods={lookups.payment_methods
+              .filter((method) => method.isActive)
+              .map((method) => ({ id: method.id, name: method.name }))}
+            today={secondsToDateString(todayInRiyadh())}
+          >
+            {payments.length === 0 ? (
+              <EmptyState>
+                {booking.status === 'draft'
                   ? 'A draft takes no payments. Confirm it first.'
                   : 'Nothing received yet.'}
-            </EmptyState>
-          ) : (
-            <ul className="divide-y divide-hairline">
-              {payments.map((payment) => (
-                <li key={payment.id} className="px-4 py-3.5 text-sm sm:px-5">
-                  <PaymentRow
-                    payment={payment}
-                    canReverse={canReversePayment && !payment.isReversed}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {canRecordPayment ? (
-            <RecordPaymentPanel
-              bookingId={id}
-              balanceDue={balanceDue}
-              methods={lookups.payment_methods
-                .filter((method) => method.isActive)
-                .map((method) => ({ id: method.id, name: method.name }))}
-              today={secondsToDateString(todayInRiyadh())}
-            />
-          ) : null}
+              </EmptyState>
+            ) : (
+              <ul className="divide-y divide-hairline">
+                {payments.map((payment) => (
+                  <li key={payment.id} className="px-4 py-3.5 text-sm sm:px-5">
+                    <PaymentRow
+                      payment={payment}
+                      canReverse={canReversePayment && !payment.isReversed}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </PaymentsSection>
         </Card>
 
         <Card title="History">

@@ -235,6 +235,7 @@ before writing any feature.
 ```bash
 npm run dev              # local dev
 npm run build            # production build
+npm test                 # vitest — money sequence against a real D1, plus component tests
 npx wrangler d1 migrations apply nusukhelp-db --local
 npx wrangler d1 migrations apply nusukhelp-db --remote
 npm run deploy           # opennextjs-cloudflare build && wrangler deploy
