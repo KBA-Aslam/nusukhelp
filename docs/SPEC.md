@@ -1157,7 +1157,7 @@ The company is **not VAT-registered**. Therefore:
 
 ### 9.10 Drafts
 
-A draft is a real row in `bookings` with `bookingNumber = null` and `status = 'draft'`, autosaved server-side on every step change (§20.4). **No browser storage** — not `localStorage`, not `sessionStorage`. Losing twenty minutes of entry to a dropped connection is the failure mode that makes staff stop using the system, and a draft that only exists in one phone's browser is already lost.
+A draft is a real row in `bookings` with `bookingNumber = null` and `status = 'draft'`, autosaved server-side on every step change and on a 1.5 s debounce while typing (§20.4). **No browser storage** — not `localStorage`, not `sessionStorage`. Losing twenty minutes of entry to a dropped connection is the failure mode that makes staff stop using the system, and a draft that only exists in one phone's browser is already lost.
 
 Drafts are excluded from every count, total, and scheduler view, and carry no booking number until confirmation (§9.1), so abandoned ones cost nothing but clutter.
 
