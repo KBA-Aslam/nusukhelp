@@ -2192,6 +2192,7 @@ of that script once the translation lands.**
 | ~~21~~ | ~~Normalise `reviews.created_at` and `enquiries.created_at` to Unix **seconds**~~ | Build | — | **Done, as a standalone change between Phase 8 and Phase 9.** Found in Phase 8 while inspecting live data and deliberately left out of that commit — migrating a live table holding a real customer review is not something to bundle into an unrelated phase. The client ruled it a live data-integrity bug that gets more expensive with every phase that queries by date, and fixed it on its own. Migration `0002` converted the stored values (guarded, idempotent); `src/lib/time.ts` is now the only clock and no `Date.now()` arithmetic remains in `src/`; `npm run check:timestamps:*` asserts the invariant across **every** table, discovering its columns from the database rather than a list. The checker was confirmed to fail on the real defect before the migration was applied, and to pass after. The one affected row — a genuine pending review — kept its value and now reads `2026-08-19 00:53:19` UTC |
 | 20 | ~~Seed the first admin account~~ — done; **one account now exists remotely**. What remains is that nobody but the client holds a panel credential, so no build phase can verify an admin screen on a real device. Phase 10 shipped unverified visually for this reason | Client | **Device QA of every admin phase** | Nothing. Either the client runs the §20.6 checks on the live panel themselves, or they create an account for the build to use — the values are theirs to type either way (docs/SECRETS.md, RUNBOOK §1.4) |
 | ~~19~~ | ~~End-to-end verification of both public forms on the live site~~ | Build | — | **Done.** A review submitted through the real form stored as `pending`, was absent from a render that had seen the row, appeared only after approval — `22:26:44Z` approved, `23:22:01Z` visible, the ISR window turning `HIT → STALE → HIT` — and carried no reviewer email in HTML, JSON or structured data. An enquiry stored and notified. Both test rows deleted; the guards fail closed. Tagged `release-1-complete` |
+| 22 | Delete the test booking **AHR-2026-00001** from remote D1 and reset the 2026 row in `booking_counters` | Build | Go-live | Nothing — the booking stays on purpose. It is the record Phases 11 and 12 are verified against, and a real one beats an invented one |
 
 Item 1 now covers two things, and they go to the advisor **together**. The
 affiliation disclaimer is a legal statement, not marketing copy, and it is the
@@ -2236,6 +2237,22 @@ deploy — `www` and the `workers.dev` preview URL included, not just the apex.
 Deleting the two parked `A` records was the whole fix. Wrangler now owns the
 records for both hostnames; adding one by hand would reproduce the same
 breakage. See §3.
+
+Item 22 exists because the alternative was worse. Phase 10's device test left one
+real booking, **AHR-2026-00001**, in the remote database, and the client ruled
+that it stays: payments (Phase 11) and both invoice styles (Phase 12) get
+verified against a booking that a person actually created through the form on a
+phone, not against a fixture written to make the code pass. A seeded row agrees
+with whatever assumptions the seed was written under; a real one carries the
+snapshot, the terms and the audit trail that the real path produced.
+
+What that buys has to be paid back before go-live, and in two parts, because
+deleting the booking alone is not enough. `booking_counters` holds the year's
+last sequence, so the row for **2026** must be reset to `0` in the same pass —
+otherwise the first genuine booking of the year is issued `AHR-2026-00002` and
+the series starts with a gap nobody can explain. Both are deliberate acts by a
+person against the remote database; nothing in the build deletes either one, and
+nothing should be added that does (§9.10).
 
 ### The go-live tag is reserved
 
