@@ -1434,6 +1434,16 @@ documents are unchanged and the card carries a line saying the booking is
 cancelled and that the document will not mention it. Whether a cancelled booking
 should refuse to produce an invoice at all is **§19 item 24**, for the client.
 
+**14 — The panel's CSP had to gain `'wasm-unsafe-eval'`, and the suite had to
+gain a browser.** Both documents are laid out by `yoga-layout`, which is
+WebAssembly, and the admin policy permitted none — so the feature was
+non-functional in every browser while 35 tests passed against it in jsdom and
+Node, where no policy exists. The keyword is WebAssembly-only and `'unsafe-eval'`
+was explicitly not added; the full diagnosis, the standing rule that anything
+depending on browser policy needs a real-browser test, and the three assertions
+in `tests/invoice-browser.test.ts` are recorded in §15. Ten of the phase's tests
+now run in headless Chrome or assert the WebAssembly dependency directly.
+
 ---
 
 ## 11. Terms & conditions
@@ -2229,6 +2239,92 @@ reuses across grounds. Every text token on the site has now been measured
 against every ground it can land on — the full matrix is in the Phase 7 report.
 Re-run that matrix, not a spot check, whenever a token or a ground changes.
 
+### Phase 12 — `'wasm-unsafe-eval'` on the admin policy, and nothing else
+
+Phase 12 deployed with a working PDF pipeline that could not run in a browser.
+The first tap failed identically on desktop and iPhone:
+
+```
+Aborted(CompileError: WebAssembly.instantiate(): Compiling or instantiating
+WebAssembly module violates the following Content Security policy directive
+because 'unsafe-eval' is not an allowed source of script in the following
+Content Security Policy directive: script-src 'self' 'nonce-...'
+'strict-dynamic')
+```
+
+**The cause is the layout engine, not font subsetting.**
+`@react-pdf/renderer` → `@react-pdf/layout` → `yoga-layout`, Facebook's Flexbox
+engine compiled with Emscripten. Every `<View>` and `<Text>` box in both
+documents is measured by it, so there is no configuration that avoids it — it is
+not an optional feature, it is how a page is laid out. `yoga-layout@3.2.1`
+exports only `.` and `./load`; the asm.js entrypoints some versions ship are not
+exported, and the WebAssembly is inlined as base64 rather than fetched as a
+`.wasm` file. Avoiding it would mean patching a transitive dependency.
+
+**The fix is one keyword, on the admin policy only.** The error message names
+`'unsafe-eval'`, and taking it at its word would have been the wrong fix: that
+keyword also re-opens `eval()`, `new Function()` and string timers across the
+entire authenticated surface — the whole policy weakened to ship one feature.
+`'wasm-unsafe-eval'` is a distinct CSP Level 3 keyword permitting WebAssembly
+compilation and nothing else, and it survives `'strict-dynamic'` (which
+suppresses allow-lists, not the eval keywords). The admin `script-src` is now:
+
+```
+script-src 'self' 'nonce-{nonce}' 'strict-dynamic' 'wasm-unsafe-eval'
+```
+
+Nothing else moved. `connect-src` stays `'self'` because the module never leaves
+the bundle, and **the public policy in `next.config.ts` is untouched** — the
+public site runs no WebAssembly. The policy now lives in `src/lib/admin-csp.ts`
+as a pure function so the browser test can serve the exact header the middleware
+sends rather than a copy of it.
+
+**The operational cost belongs with the business, not in this section.**
+`'wasm-unsafe-eval'` requires **iOS 16.4 / Safari 16.4 or newer**. On an older
+staff phone, invoice generation fails outright — §19 item 25.
+
+### The test gap this exposed, which matters more than the bug
+
+Phase 12 shipped with **35 passing tests against a feature that was completely
+non-functional in a browser**. Every one of them ran in jsdom or in Node, where
+a Content-Security-Policy does not exist, so not one could have caught it. The
+text-layer tests were right about what the PDF contains; they simply could not
+see that no PDF was ever produced.
+
+**Standing rule from this.** Any feature that depends on browser policy — WASM,
+Web Workers, Service Workers, `navigator.share`, clipboard, storage partitioning,
+anything CSP-sensitive — needs a **real-browser test**, not a jsdom one. jsdom
+tests remain the right tool for component behaviour and for what a document
+contains; they are structurally incapable of testing what a browser *permits*.
+
+`tests/invoice-browser.test.ts` is the pattern: it bundles the real pipeline with
+Vite, serves it from a local server under the exact `adminCsp()` header, and
+drives headless Chrome through `playwright-core` (which uses the locally
+installed Chrome — no browser download). It asserts three things:
+
+1. a PDF is produced under the shipped policy;
+2. `eval('1+1')` still throws under it — the assertion that keeps the fix honest,
+   since a future "fix" reaching for `'unsafe-eval'` would generate PDFs happily
+   and pass every other test in the repository;
+3. under the policy **as it was before the fix**, generation fails with that
+   CompileError — the negative control proving the suite detects the bug it was
+   written for.
+
+Two details worth keeping. The eval probe runs as page script at module load,
+not through `page.evaluate()`: Chrome exempts debugger-initiated evaluation from
+the eval restriction, so a probe called from the test reports `allowed: 2` under
+a policy that forbids eval — a false negative on the one assertion that must not
+have one. WebAssembly *is* policed on that path, which is why generation can stay
+a callable function. And where no local Chrome exists the suite **skips loudly**,
+with a console warning saying the pipeline is unverified on that machine, rather
+than passing quietly.
+
+`tests/wasm-dependency.test.ts` holds the other end: it spies on
+`WebAssembly.instantiate`/`compile` and asserts a render still touches them, so
+the policy keyword stays tied to its reason. If a future react-pdf drops
+WebAssembly, that test fails, and the correct response is to **tighten the
+policy**, not to relax the test.
+
 ### Phase 7 — accessibility fixes
 
 Four, all structural rather than cosmetic. `<main>` and any `<Section>` with an
@@ -2434,6 +2530,7 @@ of that script once the translation lands.**
 | 22 | Delete the test booking **AHR-2026-00001** from remote D1 and reset the 2026 row in `booking_counters` | Build | Go-live | Nothing — the booking stays on purpose. It is the record Phases 11 and 12 are verified against, and a real one beats an invented one |
 | 23 | Decide whether the invoice PDF should embed the brand faces (Marcellus + IBM Plex Sans) instead of Helvetica | Client | Future | Helvetica, with the identity carried by the mark, palette and layout — see §10, Phase 12 ruling 7 |
 | 24 | Decide whether a **cancelled** booking should still produce an invoice PDF, and whether the document should say so | Client | Go-live | It produces both styles, unchanged; the screen says the booking is cancelled and that the document does not — see §10, Phase 12 ruling 13 |
+| 25 | **Confirm every staff phone runs iOS 16.4 or newer.** Invoice PDF generation needs `'wasm-unsafe-eval'` in the admin CSP (§15), which Safari added in 16.4 — on an older iPhone, generating either style **fails outright**, with no fallback. This is an operational constraint on the business, not a technical footnote | Client | **Phase 12 in use** | Nothing. The policy is deployed; what is unknown is the devices it has to run on |
 
 Item 1 now covers two things, and they go to the advisor **together**. The
 affiliation disclaimer is a legal statement, not marketing copy, and it is the

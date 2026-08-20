@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 
 import { routing } from '@/i18n/routing';
+import { adminCsp } from '@/lib/admin-csp';
 
 /**
  * Two middlewares in one file, because Next allows exactly one.
@@ -67,46 +68,6 @@ function guardAdmin(request: NextRequest, nonce: string): NextResponse {
     NextResponse.next({ request: { headers } }),
     nonce,
   );
-}
-
-/**
- * The admin Content-Security-Policy (§15).
- *
- * The public site runs `script-src 'self' 'unsafe-inline'`, and `next.config.ts`
- * explains at length why: a nonce has to be unique per response, which means
- * rendering per request, and the public pages are statically generated and
- * cache-served. **The admin panel is the opposite case on every count.** It is
- * authenticated, it is dynamic already, nothing about it is cacheable, and it
- * is the only surface where a stored-XSS bug would reach booking data and
- * customer records. So it gets the strict policy the public site cannot afford.
- *
- * The nonce reaches Next's own bootstrap scripts by being on the **request**
- * header: Next parses `Content-Security-Policy` off the incoming request, finds
- * the `nonce-` value, and stamps it on every script tag it renders. That is why
- * `guardAdmin` sets the header in both directions.
- *
- * `style-src` keeps `'unsafe-inline'`. React writes inline `style` attributes,
- * and an attribute cannot carry a nonce; CSP Level 3's `'unsafe-hashes'` would
- * be the alternative and buys nothing here, since the threat this policy is
- * built against is script execution.
- */
-function adminCsp(nonce: string): string {
-  return [
-    "default-src 'self'",
-    "base-uri 'self'",
-    "object-src 'none'",
-    "frame-ancestors 'none'",
-    "form-action 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
-    "style-src 'self' 'unsafe-inline'",
-    // `blob:` is for the Phase 12 invoice PDF, which is rendered in the
-    // browser and previewed from an object URL.
-    "img-src 'self' data: blob:",
-    "font-src 'self'",
-    "connect-src 'self'",
-    "manifest-src 'self'",
-    'upgrade-insecure-requests',
-  ].join('; ');
 }
 
 /**
