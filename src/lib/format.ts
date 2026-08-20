@@ -63,3 +63,27 @@ export function formatSAR(riyals: number): string {
 
   return `SAR ${amount}`;
 }
+
+/**
+ * The invoice header's *"Statement as of 22 Aug 2026, 14:30"* (§10).
+ *
+ * Required, not decorative. Nothing about an invoice is stored: the same
+ * booking number produces a different — and always current — document every
+ * time it is downloaded, so a client holding two copies of `AHR-2026-00041`
+ * showing different figures has nothing else to tell them apart.
+ *
+ * Short month and a 24-hour clock, in `Asia/Riyadh` and Latin digits like every
+ * other formatted value here. The zone is the point: a Worker or a phone in
+ * another region must not stamp a Saudi document with its own local time.
+ */
+export function formatStatementTimestamp(date: Date): string {
+  return new Intl.DateTimeFormat('en-GB-u-nu-latn', {
+    timeZone: TIME_ZONE,
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date);
+}

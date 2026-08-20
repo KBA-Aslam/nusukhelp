@@ -18,10 +18,12 @@ import {
   type AuditEntry,
 } from '@/db/queries/audit';
 import { getBooking } from '@/db/queries/bookings';
+import { getCompanySettings } from '@/db/queries/company';
 import { listSimpleLookups } from '@/db/queries/lookups';
 import { listPayments, type Payment } from '@/db/queries/payments';
 import { requirePageAccess } from '@/lib/auth-guard';
 import { formatDate, formatSAR } from '@/lib/format';
+import { toInvoiceSource } from '@/lib/pdf/invoice-data';
 import { roleCan } from '@/lib/permissions';
 import { fromSeconds, secondsToDateString, todayInRiyadh } from '@/lib/time';
 
@@ -30,6 +32,7 @@ import {
   DeleteDraftForm,
   MarkCompletedButton,
 } from './booking-actions';
+import { InvoiceDownload } from './invoice-download';
 import { PaymentsSection, ReversePaymentForm } from './payment-forms';
 
 export const metadata: Metadata = { title: 'Booking' };
@@ -49,13 +52,12 @@ export const metadata: Metadata = { title: 'Booking' };
  * through `recalculateBooking` and this page reads the result. Nothing here
  * adds a payment to a total in the browser.
  *
- * ## What is deliberately absent
+ * ## Generate PDF
  *
- * **Download PDF** (Phase 12) is not rendered, rather than rendered disabled.
- * Phase 9 set that precedent for the agency profile's **+ New booking** button
- * and the sidebar follows it too: a dead control in front of staff is worse
- * than one that appears when it works. The section says what is coming, so the
- * screen reads as unfinished rather than broken.
+ * The card renders for anyone who may generate one (§12) and a booking that has
+ * a number — the document is built in the browser from `toInvoiceSource`, which
+ * refuses a draft. A draft says so instead of showing a dead control, which is
+ * the precedent Phase 9 set for the agency profile's **+ New booking** button.
  */
 export default async function BookingDetailPage({
   params,
@@ -68,11 +70,14 @@ export default async function BookingDetailPage({
   const booking = await getBooking(id);
   if (!booking) notFound();
 
-  // Three independent reads on a screen that is often opened over hotel wifi.
-  const [timeline, payments, lookups] = await Promise.all([
+  // Four independent reads on a screen that is often opened over hotel wifi.
+  // The company row is the invoice header (§10); it is read here rather than in
+  // the client component so the PDF needs no round trip when someone taps.
+  const [timeline, payments, lookups, company] = await Promise.all([
     listAuditForEntity('booking', id),
     listPayments(id),
     listSimpleLookups(),
+    getCompanySettings(),
   ]);
 
   const canEdit =
@@ -96,6 +101,12 @@ export default async function BookingDetailPage({
     booking.status !== 'draft' &&
     booking.status !== 'cancelled';
   const canReversePayment = roleCan(user.role, 'reversePayments');
+  const canGeneratePdf = roleCan(user.role, 'generatePdf');
+
+  // Null for a draft (no booking number, §9.1) and for a database with no
+  // company row seeded — both are states where a document would be wrong
+  // rather than merely incomplete.
+  const invoiceSource = canGeneratePdf ? toInvoiceSource(booking, company) : null;
 
   const balanceDue = booking.totalValue - booking.amountPaid;
 
@@ -290,6 +301,31 @@ export default async function BookingDetailPage({
             )}
           </PaymentsSection>
         </Card>
+
+        {/* --- Invoice PDF (§10) ----------------------------------------- */}
+        {canGeneratePdf ? (
+          <Card
+            title="Generate PDF"
+            description="Rendered from the figures above, as they are right now. Nothing is stored."
+          >
+            {invoiceSource ? (
+              <InvoiceDownload
+                source={invoiceSource}
+                statusNote={
+                  booking.status === 'cancelled'
+                    ? 'This booking is cancelled. Neither document says so — the state is on this screen only.'
+                    : undefined
+                }
+              />
+            ) : (
+              <EmptyState>
+                {booking.status === 'draft'
+                  ? 'A draft has no booking number yet, and a document identified by nothing is worse than none. Confirm it first.'
+                  : 'Company details are not set up yet — the invoice header comes from them. Add them in Settings › Company.'}
+              </EmptyState>
+            )}
+          </Card>
+        ) : null}
 
         <Card title="History">
           {timeline.length === 0 ? (

@@ -1317,6 +1317,123 @@ The choice is explicit each time. No remembered default — the cost of accident
 
 SAR only, so a single converter. `3450` → *"Three Thousand Four Hundred Fifty Saudi Riyals Only"*. No decimal handling needed. Full style only.
 
+### Phase 12 rulings — where the build departs from §10 and §20.2
+
+Phase 12 is built: `lib/pdf/` (types, sanitiser, builder, amount-in-words,
+mark), `components/pdf/` (theme and the two documents), the **Generate PDF**
+card on the booking detail screen, and two test suites. **No migration** — the
+invoice is a view of a booking, so this phase adds no table and no column.
+Thirteen things needed deciding.
+
+**1 — The shared fields are written out twice, and that is the ruling.**
+`InvoiceFullData` and `InvoiceConfidentialData` are declared independently, with
+~30 non-financial fields duplicated between them. Deriving one from the other —
+`InvoiceFullData = InvoiceConfidentialData & Money` — would remove the
+duplication and was rejected by the client for a specific reason: the
+confidential type would then grow silently every time the *full* invoice gained
+a field, and edits to that type are precisely the ones that must be rare and
+scrutinised. It is meant to be read top to bottom as a complete inventory of
+what may leave the building. **This is a deliberate exception to the project's
+derive-rather-than-duplicate habit. Do not "fix" it.**
+
+**2 — A literal `style` tag on each type, because structural typing leaves the
+hole open.** TypeScript compares shapes, not names, so without it
+`InvoiceFullData` would be assignable to `InvoiceConfidentialData` — it has
+every field the confidential shape has and more — and
+`const toConfidential = (b) => b` would compile clean while handing the
+confidential document the whole priced object. `style: 'full'` and
+`style: 'confidential'` make the two mutually unassignable, which leaves
+`toConfidential` as the only way to obtain the confidential shape. The client
+called this the crux of the design. The tag doubles as the word the screen uses
+to name what it just produced.
+
+**3 — The company header is split too.** Bank details are money, and §10 hides
+them entirely on the confidential style, so `InvoiceCompanyConfidential` has no
+IBAN field. One shared company object would have re-opened the hole one level
+down.
+
+**4 — `vatAmount` reaches neither document, and `dueDate` only the full one.**
+The VAT column is structurally zero (§9.9) and a zero VAT line on a document
+titled INVOICE is exactly the impression Appendix A forbids, so it is not
+carried into the PDF layer at all. `dueDate` is a date rather than an amount,
+but it exists solely to say when money is owed, and §10's list of what the
+confidential style shows does not include it.
+
+**5 — No number, no document.** `toInvoiceSource` returns `null` for a draft
+(§9.1 allocates the number at confirmation) and for a database with no
+`company_settings` row. The card then says which of the two it is and what to do
+about it, rather than offering a control that would produce a document
+identified by nothing.
+
+**6 — The timestamp is stamped at the tap, not at page render.** The server
+hands down `InvoiceSource` — everything except `generatedAt` — and the click
+handler adds the clock reading. A screen opened at 14:30 and tapped at 15:10
+must say 15:10, because that header line is the only thing distinguishing two
+downloads of one booking number (§10). `formatStatementTimestamp()` in
+`lib/format.ts` renders it in `Asia/Riyadh` with Latin digits, like every other
+formatted value.
+
+**7 — Helvetica, not the brand faces.** Marcellus and IBM Plex Sans would have
+to be fetched and embedded at generation time, and a font fetch that fails on
+hotel wifi either loses the download or substitutes silently — the second being
+the failure mode this phase exists to eliminate. The identity is carried by the
+mark, the palette and the layout. Embedding the brand faces is a small,
+self-contained follow-up; **§19 item 23**.
+
+**8 — `AHR_MARK_SRC` lives in `lib/pdf/mark.ts`, away from everything that
+imports react-pdf.** `components/pdf/invoice-theme.ts` calls `StyleSheet.create`
+at module scope, so importing that one string from there pulled the entire PDF
+library into the booking screen's initial JavaScript and defeated the dynamic
+import. Measured: the route went from **572 kB first load to 113 kB**, with
+react-pdf now fetched on the tap that needs it. The mark itself is fetched
+same-origin rather than inlined as a data URI — it is a 250 KB PNG.
+
+**9 — The footer carries the VAT disclaimer and no page numbers.** A dynamic
+`<Text render={…}>` child inside the fixed footer made react-pdf drop **the
+entire footer block** from the output — silently, with no error and a
+well-formed PDF. That was found by the text-layer test, not by looking at the
+render. §10 does not ask for page numbers; the disclaimer is required, so the
+disclaimer stayed and the numbers went.
+
+**10 — Kebab-case filenames.** §10 names the components
+`InvoiceFullDocument.tsx` and `InvoiceConfidentialDocument.tsx`; the files are
+`invoice-full-document.tsx` and `invoice-confidential-document.tsx`, per
+Appendix B. The *components* are named exactly as §10 says.
+
+**11 — Generate and share are two taps, deliberately.** §10 requires an explicit
+style choice every time, so neither radio is preselected and **Generate** stays
+disabled until one is picked. Generating then produces a panel that scrolls
+itself into view, is announced (`role="status"`), and says in words which style
+was produced and what is in it — *"Confidential invoice ready — no amounts in
+it"* or *"Full invoice ready — every amount is in it… do not send this to an end
+client"* — before offering **Share**. The client's ruling: the filename carries
+the style, but nobody reads a filename on a phone before hitting share, so the
+answer has to be given after the fact, not only asked for beforehand. The second
+tap also keeps `navigator.share` inside its own user gesture, which iOS Safari
+requires. Changing the selection clears the panel, so a stale answer can never
+sit above a newly chosen style. Failures say outright that nothing was produced,
+and **nothing ever falls back to the other style**.
+
+**12 — Verification is a text-layer test whose detector is proven to fire.**
+`tests/invoice-pdf.test.tsx` renders real PDFs and extracts their text with
+`unpdf`, because a figure can be white on white, clipped off the page or hidden
+behind a box and still be selectable, copyable and greppable by the recipient.
+The same detector runs over the full style, where it **must** find the amounts —
+so a broken extractor turns the full-invoice assertion red instead of letting
+the confidential one pass for the wrong reason. On the client's instruction the
+negative case was also run by hand once: `pricePerNight` was temporarily added to
+`BookingRoomConfidential`, carried through `toConfidential` and rendered in the
+confidential document; the suite failed, naming `SAR` and `1,750`; the leak was
+then removed. `tests/invoice-delivery.test.tsx` covers the other half — that the
+style is named on screen after generation — and was likewise confirmed to fail
+against a version of the panel that said only *"Your PDF is ready"*.
+
+**13 — A cancelled booking still produces a document, and neither style says so.**
+§10 is silent on this and inventing a watermark was not the build's call, so the
+documents are unchanged and the card carries a line saying the booking is
+cancelled and that the document will not mention it. Whether a cancelled booking
+should refuse to produce an invoice at all is **§19 item 24**, for the client.
+
 ---
 
 ## 11. Terms & conditions
@@ -2275,7 +2392,7 @@ of that script once the translation lands.**
 
 **Phase 11 — Payments.** Unlimited instalments recorded against a booking. Derived `amountPaid` and `paymentStatus`, recalculated on payment *and* on booking edit. Reversal with reason. Payment history on the booking detail screen. The table and the derivation already exist (Phase 10 ruling 1); **this phase must call `recalculateBooking` rather than compute either figure itself** (ruling 2). **Built.** No migration — the table shipped a phase early, so there was nothing to add. Recording warns without blocking on an overpayment or a future date, reversal is admin-only and idempotent, and both are logged against the booking so they appear in the one timeline staff read. The departures from §9.4 and §13.4 are recorded as *Phase 11 rulings* in §13. **Device-tested against AHR-2026-00001**, which found two defects — both of them the same defect: the server answered correctly and the answer never reached the screen (ruling 7). The phase now carries the project's first automated tests, running the full money sequence against a real D1 and asserting the stored derived values at every step (ruling 8). Remaining device QA is the client's (§19 items 20 and 22).
 
-**Phase 12 — PDF.** Two type shapes, sanitiser, two separate document components, generation UI, amount-in-words, generation timestamp in the header. Web Share API delivery with download fallback (section 20.2). **Test on a real iPhone before moving on** — verify A4 dimensions, page breaks, and the share sheet. **Test the confidential style specifically for leaks** — inspect extracted PDF text, not just the visual render.
+**Phase 12 — PDF.** Two type shapes, sanitiser, two separate document components, generation UI, amount-in-words, generation timestamp in the header. Web Share API delivery with download fallback (section 20.2). **Test on a real iPhone before moving on** — verify A4 dimensions, page breaks, and the share sheet. **Test the confidential style specifically for leaks** — inspect extracted PDF text, not just the visual render. **Built and deployed.** No migration — the invoice is a view of a booking. Two independent types with the confidential shape carrying no price field at all, a literal `style` tag closing the structural-typing hole, an allow-list sanitiser, two separate documents, and a generation card that names the style it produced *after the fact*. The departures from §10 and §20.2 are recorded as *Phase 12 rulings* in §10. Verified by extracting the rendered PDF's text layer — and the leak detector was proven to fire, both automatically against the full style and by hand against a temporarily leaked confidential one. **Device QA on a real iPhone — A4 dimensions on paper, page breaks and the share sheet — remains the client's** (§19 items 20 and 22).
 
 **Phase 13 — Scheduler.** Calendar with four views, check-in and check-out lists with filters, completion page and dashboard alert.
 
@@ -2315,6 +2432,8 @@ of that script once the translation lands.**
 | 20 | ~~Seed the first admin account~~ — done; **one account now exists remotely**. What remains is that nobody but the client holds a panel credential, so no build phase can verify an admin screen on a real device. Phase 10 shipped unverified visually for this reason | Client | **Device QA of every admin phase** | Nothing. Either the client runs the §20.6 checks on the live panel themselves, or they create an account for the build to use — the values are theirs to type either way (docs/SECRETS.md, RUNBOOK §1.4) |
 | ~~19~~ | ~~End-to-end verification of both public forms on the live site~~ | Build | — | **Done.** A review submitted through the real form stored as `pending`, was absent from a render that had seen the row, appeared only after approval — `22:26:44Z` approved, `23:22:01Z` visible, the ISR window turning `HIT → STALE → HIT` — and carried no reviewer email in HTML, JSON or structured data. An enquiry stored and notified. Both test rows deleted; the guards fail closed. Tagged `release-1-complete` |
 | 22 | Delete the test booking **AHR-2026-00001** from remote D1 and reset the 2026 row in `booking_counters` | Build | Go-live | Nothing — the booking stays on purpose. It is the record Phases 11 and 12 are verified against, and a real one beats an invented one |
+| 23 | Decide whether the invoice PDF should embed the brand faces (Marcellus + IBM Plex Sans) instead of Helvetica | Client | Future | Helvetica, with the identity carried by the mark, palette and layout — see §10, Phase 12 ruling 7 |
+| 24 | Decide whether a **cancelled** booking should still produce an invoice PDF, and whether the document should say so | Client | Go-live | It produces both styles, unchanged; the screen says the booking is cancelled and that the document does not — see §10, Phase 12 ruling 13 |
 
 Item 1 now covers two things, and they go to the advisor **together**. The
 affiliation disclaimer is a legal statement, not marketing copy, and it is the
