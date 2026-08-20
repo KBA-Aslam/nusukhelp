@@ -37,12 +37,20 @@ import {
  *
  * ## Autosave is not polish
  *
- * The draft is a server-side row saved on every step change (§9.10), never
- * browser storage. Losing twenty minutes of entry to a dropped connection or an
- * incoming call is the failure mode that makes staff stop using a system
- * altogether — and a draft that only exists in one phone's browser is already
- * lost when that happens. `beforeunload` covers the other half: leaving a step
- * with unsaved edits asks first.
+ * The draft is a server-side row (§9.10), never browser storage. Losing twenty
+ * minutes of entry to a dropped connection or an incoming call is the failure
+ * mode that makes staff stop using a system altogether — and a draft that only
+ * exists in one phone's browser is already lost when that happens.
+ *
+ * It saves on **two** triggers, not one. §20.4 asks for a save on step change;
+ * that alone loses everything typed into the step someone is standing in when
+ * the call they are on ends the session. So there is also a debounce — the
+ * draft is written a second and a half after the last keystroke — and both go
+ * through `persistDraft`, which holds an in-flight lock. That lock is the whole
+ * reason the two triggers can coexist: without it, a debounce firing at the
+ * same moment as a step change would call `createDraft` twice and leave two
+ * half-finished bookings where the person made one. `beforeunload` covers the
+ * remaining sliver.
  *
  * ## The running total is display only
  *
@@ -168,6 +176,15 @@ export const EMPTY_BOOKING: BookingFormValues = {
   notes: '',
 };
 
+/**
+ * How long after the last keystroke the draft is written.
+ *
+ * Long enough that ordinary typing is one request rather than thirty, short
+ * enough that what a dropped connection costs is a word. A phone on hotel wifi
+ * is the connection this is tuned for.
+ */
+const DRAFT_SAVE_DELAY_MS = 1500;
+
 const STEPS = [
   'Agency',
   'Guest',
@@ -204,11 +221,11 @@ export function BookingForm({
 }) {
   const [values, setValues] = useState<BookingFormValues>(initial);
   const [step, setStep] = useState(startStep);
-  const [draftId, setDraftId] = useState<string | null>(bookingId);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [message, setMessage] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[] | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const dirty = useRef(false);
@@ -219,6 +236,98 @@ export function BookingForm({
     dirty.current = true;
     setValues((current) => ({ ...current, [key]: value }));
   }, []);
+
+  /* --- What the autosave reads from -------------------------------------
+     The debounce fires from inside a timer, where a captured `values` would be
+     whatever it was when the timer was set. These refs hold the current state,
+     so a save sends what is on the screen now rather than what was there a
+     second and a half ago — which, on someone typing quickly, is a whole
+     field. */
+  const valuesRef = useRef(values);
+  const draftIdRef = useRef<string | null>(bookingId);
+  const savingRef = useRef(false);
+  const queuedRef = useRef(false);
+
+  useEffect(() => {
+    valuesRef.current = values;
+  }, [values]);
+
+  /**
+   * The one place a draft is written. Both triggers call it.
+   *
+   * The in-flight lock matters more than it looks. `createDraft` runs whenever
+   * `draftIdRef` is still null, so two overlapping saves on a new booking would
+   * create two rows and the second would orphan the first — one draft the
+   * person can see and one they cannot, which is a worse version of the bug
+   * this whole mechanism exists to prevent. A save that arrives while one is
+   * running sets `queuedRef` and runs again once there is an id to save over.
+   *
+   * `dirty` is cleared before the request and restored if it fails, so a failed
+   * save is retried by the next keystroke rather than dropped, and edits made
+   * *during* a save are not marked clean by its success.
+   */
+  const persistDraft = useCallback(async (): Promise<void> => {
+    if (mode !== 'create') return;
+    if (!dirty.current) return;
+
+    const snapshot = valuesRef.current;
+    // §8 makes `agency_name` NOT NULL, and a draft with no agency is one nobody
+    // can identify in the Drafts list afterwards.
+    if (!snapshot.agencyName.trim()) return;
+
+    if (savingRef.current) {
+      queuedRef.current = true;
+      return;
+    }
+
+    savingRef.current = true;
+    dirty.current = false;
+    setSaving(true);
+
+    try {
+      const result = await saveDraftAction({
+        id: draftIdRef.current,
+        values: snapshot as unknown as BookingValues,
+      });
+
+      if (result.ok) {
+        draftIdRef.current = result.id;
+        setSaved(new Date().toLocaleTimeString());
+        setMessage(null);
+      } else if (result.kind !== 'confirm') {
+        dirty.current = true;
+        setMessage('message' in result ? result.message : null);
+      }
+    } catch {
+      dirty.current = true;
+      setMessage(
+        'Could not reach the server — your last changes are not saved yet.',
+      );
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+
+      if (queuedRef.current) {
+        queuedRef.current = false;
+        dirty.current = true;
+        void persistDraft();
+      }
+    }
+  }, [mode]);
+
+  /* --- Trigger 2: a debounce while typing --------------------------------
+     Beyond §20.4, which asks only for the step change. Staff fill this in on a
+     phone in the middle of a conversation, and a step can be twenty fields
+     long — so the step boundary on its own promises that what you typed is safe
+     only if you happened to move on afterwards. Losing a step is a failure this
+     project has already had once. */
+  useEffect(() => {
+    if (mode !== 'create') return;
+    const timer = setTimeout(() => {
+      void persistDraft();
+    }, DRAFT_SAVE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [values, mode, persistDraft]);
 
   /* --- Confirm before leaving (§20.4) ---
      Only when there is something to lose. A `beforeunload` handler that always
@@ -277,50 +386,51 @@ export function BookingForm({
   }
 
   /**
-   * Autosave, then move.
+   * Trigger 1: save, then move (§20.4).
    *
    * The step changes whatever the save does. A failed autosave must not trap
-   * someone on step 3 — the message says what happened, and the next step
-   * change tries again.
+   * someone on step 3 — the message says what happened, the edits stay dirty,
+   * and the debounce tries again.
    */
   function goToStep(next: number) {
     const target = Math.max(0, Math.min(STEPS.length - 1, next));
 
-    if (mode === 'create' && dirty.current && values.agencyName.trim()) {
-      startTransition(async () => {
-        const result = await saveDraftAction({
-          id: draftId,
-          values: values as unknown as BookingValues,
-        });
-        if (result.ok) {
-          setDraftId(result.id);
-          dirty.current = false;
-          setSaved(new Date().toLocaleTimeString());
-          setMessage(null);
-        } else if (result.kind !== 'confirm') {
-          setMessage('message' in result ? result.message : null);
-        }
-      });
-    }
+    void persistDraft();
 
     setStep(target);
     window.scrollTo({ top: 0 });
   }
 
+  /**
+   * Confirm, or save an edit.
+   *
+   * The id comes from `draftIdRef`, **not** from the `draftId` state, and the
+   * difference is a duplicate booking. A debounce that fires as someone reaches
+   * for Confirm creates the draft row and then sets state; React delivers that
+   * state on the next render, and a tap that lands in between would send
+   * `id: null` and create a *second* booking — this time a numbered one. The
+   * ref is set the moment the id is known.
+   *
+   * Waiting on `persistDraft` first also flushes whatever was typed inside the
+   * debounce window, so Confirm never validates against a stale snapshot.
+   */
   function submit(acknowledged = false) {
     startTransition(async () => {
-      const payload = values as unknown as BookingValues;
+      await persistDraft();
+
+      const payload = valuesRef.current as unknown as BookingValues;
+      const id = bookingId ?? draftIdRef.current;
 
       const result =
         mode === 'edit' && bookingId
           ? await saveBookingAction({ id: bookingId, values: payload, acknowledged })
-          : await confirmBookingAction({ id: draftId, values: payload });
+          : await confirmBookingAction({ id: draftIdRef.current, values: payload });
 
       if (applyResult(result)) {
         dirty.current = false;
         // `confirmBookingAction` redirects and never returns; an edit stays put
         // and reloads so the detail screen shows the recalculated figures.
-        window.location.assign(`/admin/bookings/${bookingId ?? draftId}`);
+        window.location.assign(`/admin/bookings/${id}`);
       }
     });
   }
@@ -328,11 +438,12 @@ export function BookingForm({
   function saveDraftOnly() {
     startTransition(async () => {
       const result = await saveDraftAction({
-        id: draftId,
-        values: values as unknown as BookingValues,
+        id: draftIdRef.current,
+        values: valuesRef.current as unknown as BookingValues,
       });
       if (result.ok) {
         dirty.current = false;
+        draftIdRef.current = result.id;
         window.location.assign(`/admin/bookings/${result.id}`);
       } else {
         applyResult(result);
@@ -398,7 +509,11 @@ export function BookingForm({
           <span className="text-xs text-muted">
             {totals.totalRooms} {totals.totalRooms === 1 ? 'room' : 'rooms'} ·{' '}
             {totals.totalNights} {totals.totalNights === 1 ? 'night' : 'nights'}
-            {saved ? <span className="ms-2">· draft saved {saved}</span> : null}
+            {saving ? (
+              <span className="ms-2">· saving…</span>
+            ) : saved ? (
+              <span className="ms-2">· draft saved {saved}</span>
+            ) : null}
           </span>
           <span className="font-display text-lg text-ink">
             {formatSAR(totals.totalValue)}

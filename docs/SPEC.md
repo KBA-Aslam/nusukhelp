@@ -1764,7 +1764,20 @@ invoice a payment referred to. Confirming is likewise the last step of the actio
 and the redirect sits outside the `try`, so a confirmed booking is never reported
 as a failure and re-confirmed.
 
-**7 — Four calendar-date columns had to be added to the timestamp checker by
+**7 — Draft autosave runs on two triggers, one more than §20.4 asks for.** The
+spec asks for a save on step change; the build also debounces 1.5 s after the
+last keystroke, because a step is not a small unit — step 5 can hold four room
+rows — and a save that only happens at the boundary loses everything typed into
+whichever step someone was standing in when the phone call ended. That is the
+same class of loss the autosave exists to prevent, and this project has already
+had one report of it. Both triggers, plus Confirm, go through a single
+`persistDraft` holding an **in-flight lock**: without it a debounce firing as
+someone taps Confirm would call `createDraft` twice and leave two half-finished
+bookings where the person made one — and the id is read from a ref rather than
+from React state for the same reason, since state arriving a render late would
+send `id: null` and produce a duplicate *numbered* booking.
+
+**8 — Four calendar-date columns had to be added to the timestamp checker by
 hand.** `check_in_date`, `check_out_date`, `booking_date` and `due_date` are days
 rather than instants and none matches the `*_at` convention
 `scripts/check-timestamps.mjs` discovers columns by, so all four are now in
@@ -2136,7 +2149,7 @@ of that script once the translation lands.**
 
 **Phase 9 — Foundations.** Lookup tables with seed data, company settings page, agencies CRUD. **Built and deployed.** Migrations `0003` (schema) and `0004` (seed) are applied local and remote; the seed is separate from the schema because the lists are the client's to edit at runtime, and it is idempotent so re-running it cannot overwrite their work. The departures from §4 and §13.8 — chiefly viewer read access to agencies, the two CRUD routes, and the agency profile shipping without the figures that need `bookings` — are recorded as *Phase 9 rulings* in §13.
 
-**Phase 10 — Bookings.** Full schema. Stepped mobile-first creation form. Rooms and services repeaters. Server-side calculation. Server-side draft autosave on step change. Confirm with atomic numbering. List with search and filters, including the Drafts filter with 30-day stale marking for manual deletion (§9.10). Detail screen. Edit with the section 9.3 guards. Cancel. Audit logging with before/after values. **Built and deployed.** Migration `0005_phase10_bookings.sql` is applied local and remote and creates six tables — `bookings`, `booking_rooms`, `booking_services`, `payments`, `booking_counters`, `audit_log`. `payments` deliberately arrives a phase ahead of its UI so that the derivation has one implementation rather than two; the departures from §8, §13.4 and §20 are recorded as *Phase 10 rulings* in §13. The panel screens have **not** been checked on a device: signing in needs an account, and accounts are the client's to create (§19 item 20).
+**Phase 10 — Bookings.** Full schema. Stepped mobile-first creation form. Rooms and services repeaters. Server-side calculation. Server-side draft autosave on step change. Confirm with atomic numbering. List with search and filters, including the Drafts filter with 30-day stale marking for manual deletion (§9.10). Detail screen. Edit with the section 9.3 guards. Cancel. Audit logging with before/after values. **Built and deployed.** Migration `0005_phase10_bookings.sql` is applied local and remote and creates six tables — `bookings`, `booking_rooms`, `booking_services`, `payments`, `booking_counters`, `audit_log`. `payments` deliberately arrives a phase ahead of its UI so that the derivation has one implementation rather than two; the departures from §8, §13.4 and §20 are recorded as *Phase 10 rulings* in §13. **Device-tested on Android**, which found one defect and one addition: the Drafts filter was not discoverable enough to count as the work being findable (ruling 4), and autosave now runs on a typing debounce as well as on step change (ruling 7). The build itself still cannot sign in to check a screen — accounts are the client's to create (§19 item 20).
 
 **Phase 11 — Payments.** Unlimited instalments recorded against a booking. Derived `amountPaid` and `paymentStatus`, recalculated on payment *and* on booking edit. Reversal with reason. Payment history on the booking detail screen. The table and the derivation already exist (Phase 10 ruling 1); **this phase must call `recalculateBooking` rather than compute either figure itself** (ruling 2).
 
@@ -2314,7 +2327,7 @@ This is the hardest screen to get right on a phone: repeating room rows, repeati
 - The **stepped form** (section 13.3) exists for this reason — seven short screens instead of one long one.
 - Each room and service row is a **collapsible card**, showing a one-line summary when collapsed (*"Double Room × 2 — SAR 1,200"*) and expanding to edit. Ten room types on one screen is otherwise unmanageable.
 - The **running total stays pinned** so it's visible without scrolling.
-- **Autosave drafts** on step change. Losing twenty minutes of entry to a dropped connection or a phone call is the failure mode that makes staff stop using the system.
+- **Autosave drafts** on step change **and on a debounce while typing** — 1.5 s after the last keystroke. Losing twenty minutes of entry to a dropped connection or a phone call is the failure mode that makes staff stop using the system, and the step boundary alone does not prevent it: a step can be twenty fields long, and everything typed into the step someone is standing in when the call ends goes with it. Both triggers go through one save function holding an in-flight lock, so they cannot create two draft rows for one booking.
 - **Confirm before leaving** an unsaved step.
 
 ### 20.5 Public site
