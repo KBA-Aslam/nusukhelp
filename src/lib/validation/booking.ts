@@ -2,6 +2,14 @@ import { z } from 'zod';
 
 import { BOOKING_SOURCES, HOTEL_CATEGORIES, HOTEL_CITIES } from '@/db/schema';
 
+import {
+  dateString,
+  optionalId as sharedOptionalId,
+  optionalText as sharedOptionalText,
+  requiredDateString,
+  riyals as sharedRiyals,
+} from './fields';
+
 /**
  * The booking schemas — shared client and server, **server authoritative**
  * (Appendix B, §15).
@@ -41,36 +49,18 @@ import { BOOKING_SOURCES, HOTEL_CATEGORIES, HOTEL_CITIES } from '@/db/schema';
  * service-type default price follows.
  */
 
-const optionalText = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .transform((value) => (value.length === 0 ? null : value))
-    .nullable()
-    .default(null);
-
-const optionalId = z
-  .string()
-  .trim()
-  .max(60)
-  .transform((value) => (value.length === 0 ? null : value))
-  .nullable()
-  .default(null);
-
-/** `YYYY-MM-DD` or empty. Parsed to seconds server-side, never here. */
-const dateString = z
-  .string()
-  .trim()
-  .regex(/^(\d{4}-\d{2}-\d{2})?$/, 'Enter a valid date.')
-  .default('');
-
-/** Whole Saudi Riyals. Bounded above: a ten-million-riyal room is a typo. */
-const riyals = z.coerce
-  .number()
-  .int('Amounts are in whole Riyals — no decimals.')
-  .min(0, 'Cannot be negative.')
-  .max(10_000_000, 'That looks like a mistake.');
+/**
+ * The shapes come from `fields.ts`; what is local is the `.default(null)`.
+ *
+ * A booking form field that was never reached is *absent* from the autosaved
+ * payload, not empty — step 6 has not been rendered yet when step 2 saves — so
+ * every optional field needs a default for the lenient draft parse to succeed.
+ * That is a property of this form, not of optional text everywhere, which is
+ * why it is applied here rather than baked into the shared shape.
+ */
+const optionalText = (max: number) => sharedOptionalText(max).default(null);
+const optionalId = sharedOptionalId.default(null);
+const riyals = sharedRiyals();
 
 const count = (max: number) =>
   z.coerce.number().int('Enter a whole number.').min(1, 'At least 1.').max(max);
@@ -173,14 +163,8 @@ export type BookingParsed = z.output<typeof bookingDraftSchema>;
 export const bookingConfirmSchema = bookingDraftSchema
   .extend({
     hotelName: z.string().trim().min(1, 'Enter the hotel.').max(120),
-    checkInDate: z
-      .string()
-      .trim()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter the check-in date.'),
-    checkOutDate: z
-      .string()
-      .trim()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter the check-out date.'),
+    checkInDate: requiredDateString('Enter the check-in date.'),
+    checkOutDate: requiredDateString('Enter the check-out date.'),
     rooms: z.array(roomLineSchema).min(1, 'Add at least one room.').max(60),
   })
   .refine((values) => values.checkOutDate > values.checkInDate, {

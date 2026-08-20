@@ -18,12 +18,13 @@ import { formatSAR } from '@/lib/format';
 import { dateStringToSeconds } from '@/lib/time';
 import type { BookingValues } from '@/lib/validation/booking';
 
+import type { FieldErrors } from '@/lib/action-result';
+
 import {
   confirmBookingAction,
   saveBookingAction,
   saveDraftAction,
   type BookingActionResult,
-  type FieldErrors,
 } from './actions';
 
 /**

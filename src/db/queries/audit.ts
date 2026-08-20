@@ -31,8 +31,13 @@ export const AUDIT_ACTIONS = [
   'booking.completed',
   'booking.cancelled',
   'booking.draft_deleted',
-  // Phases 11 and 12 add their own: payment.recorded, payment.reversed,
-  // pdf.generated. Listed there, not pre-empted here.
+  // Money. Both are logged against the **booking**, not against the payment,
+  // so they appear in the one timeline staff actually read (§13.4). A reversal
+  // is a decision someone made and has to answer for later, which is why it
+  // carries its reason here as well as on the payment row.
+  'payment.recorded',
+  'payment.reversed',
+  // Phase 12 adds pdf.generated. Listed there, not pre-empted here.
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -94,6 +99,34 @@ export const AUDITED_BOOKING_FIELDS = {
   notes: 'Notes',
   status: 'Status',
 } as const;
+
+/**
+ * What the timeline calls each field, including the two derived money columns
+ * that only a payment moves.
+ *
+ * Derived from the diff whitelist rather than typed out again: a field added to
+ * the audit that has no label here would render as `guestMobile` to whoever is
+ * reading the history six months later.
+ */
+export const AUDIT_FIELD_LABELS: Record<string, string> = {
+  ...AUDITED_BOOKING_FIELDS,
+  amountPaid: 'Paid',
+  paymentStatus: 'Payment status',
+};
+
+/** Rendered through `formatSAR` — never interpolated raw (§8). */
+export const AUDIT_MONEY_FIELDS = new Set([
+  'discountAmount',
+  'totalValue',
+  'amountPaid',
+]);
+
+/** Stored as Unix seconds; rendered through `formatDate`. */
+export const AUDIT_DATE_FIELDS = new Set([
+  'checkInDate',
+  'checkOutDate',
+  'dueDate',
+]);
 
 type AuditedField = keyof typeof AUDITED_BOOKING_FIELDS;
 

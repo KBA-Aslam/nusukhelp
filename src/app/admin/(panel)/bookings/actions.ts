@@ -15,7 +15,8 @@ import {
   setBookingStatus,
 } from '@/db/queries/bookings';
 import { computeBookingTotals } from '@/lib/booking-math';
-import { NotAuthorisedError, requireCapability } from '@/lib/auth-guard';
+import { fieldErrorsFrom, refuseMessage, type FieldErrors } from '@/lib/action-result';
+import { requireCapability } from '@/lib/auth-guard';
 import { formatSAR } from '@/lib/format';
 import { dateStringToSeconds } from '@/lib/time';
 import {
@@ -52,36 +53,8 @@ export type BookingActionResult =
   | { ok: false; kind: 'invalid'; message: string; fieldErrors: FieldErrors }
   | { ok: false; kind: 'confirm'; warnings: string[] };
 
-/** Dotted paths — `rooms.0.pricePerNight` — so the form can mark the row. */
-export type FieldErrors = Record<string, string>;
-
-/**
- * One sentence for the person, and the detail in the log.
- *
- * A `NotAuthorisedError` is answered the same way whatever caused it, and a
- * database fault is never described — telling the caller which of the two it
- * was is telling them the shape of a system they have no business knowing
- * (`lib/auth-guard.ts`).
- */
-function refuseMessage(error: unknown, fallback: string): string {
-  if (error instanceof NotAuthorisedError) {
-    return 'You do not have permission to do that.';
-  }
-  console.error(fallback, error);
-  return fallback;
-}
-
 function refuse(error: unknown, fallback: string): BookingActionResult {
   return { ok: false, kind: 'error', message: refuseMessage(error, fallback) };
-}
-
-function fieldErrorsFrom(issues: { path: PropertyKey[]; message: string }[]) {
-  const errors: FieldErrors = {};
-  for (const issue of issues) {
-    const key = issue.path.join('.');
-    if (!(key in errors)) errors[key] = issue.message;
-  }
-  return errors;
 }
 
 /* --------------------------------------------------------------------------

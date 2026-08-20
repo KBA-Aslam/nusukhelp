@@ -1787,6 +1787,75 @@ millisecond value was written into `bookings.check_in_date` in the local
 database, the checker was confirmed to name that column and exit non-zero, and
 the row was removed. Both databases pass across 38 columns in 21 tables.
 
+### Phase 11 rulings — where the build departs from §9.4 and §13.4
+
+Phase 11 is built: `db/queries/payments.ts`, the two server actions, the record
+panel and the payment history on the booking detail screen. **No migration** —
+`payments` shipped in Phase 10 (ruling 1), so this phase adds no table and no
+column. Six things needed deciding.
+
+**1 — `recalculateBooking` stayed the only writer, which was the whole point of
+shipping the table early.** Neither action touches `amountPaid` or
+`paymentStatus`; both insert or update a payment row and then call the Phase 10
+function, which sums stored rows. The shortcut this design refuses is
+`amountPaid + amount` on insert, and the reason is not tidiness: a booking whose
+paid figure was incremented in one place and derived in another reads *paid* on
+the detail screen and *partially paid* on the list, and there is no way to tell
+which one the client was shown.
+
+**2 — Two warnings, neither of them blocking, where §9.4 asks for none.**
+Paying more than the balance due and dating a payment in the future are both
+things a person does by accident far more often than on purpose — and both are
+occasionally exactly right, because clients genuinely overpay and transfers
+genuinely land tomorrow. Refusing them would be wrong; letting them through
+silently would be worse. So they take the shape §9.3 already established for
+booking edits: the action answers `kind: 'confirm'` with the sentence to show,
+and the same submission returns with `acknowledged: true`. The button changes
+its own label to **Record it anyway**, so the second tap is a different act from
+the first. Editing any field clears the warning, because acknowledging a
+sentence about an amount no longer in the box is not acknowledgement.
+
+**3 — The two §9.4 status rules are enforced in the action, not by the missing
+button.** A payment cannot be recorded against a `draft` or a `cancelled`
+booking. The detail screen also does not offer the panel in either state, but
+that is a courtesy — the rule lives in `recordPaymentAction`, because a server
+action is a POST that can be made without ever loading the page. The refusal on
+a cancelled booking says what to do instead: *a refund is recorded by reversing
+the original payment, which keeps both entries in the history.* A refusal that
+does not name the right path is a refusal that gets worked around.
+
+**4 — "A small modal, not a page" (§13.4) was built as a panel inside the
+Payments card.** The requirement that carries the meaning is *not a page* —
+staff must not lose the booking they are looking at to record money against it.
+A true modal on a phone brings the problems §20 exists to avoid: scroll locking,
+focus traps, and iOS repositioning a fixed overlay when the keyboard opens. The
+panel opens in place, directly beneath the history it is about, and the money
+strip stays on screen above it.
+
+**5 — These two forms are controlled, where every other lifecycle form on the
+screen is a plain `<form action>` that works without JavaScript.** React resets
+an uncontrolled form once its action resolves, which would wipe the amount,
+date, reference and notes at exactly the moment the answer says *look at this
+again*. Holding the values in state is what makes "record it anyway" a second
+tap rather than a second round of typing on a phone. It is a real cost — these
+two controls need JavaScript where **Mark completed** and **Cancel** do not —
+and it is paid for the acknowledge round trip specifically, not adopted as the
+house style.
+
+**6 — Reversal is idempotent, and a second attempt is not an error.** The update
+carries `is_reversed = 0` in its `WHERE`, so a double tap or a retry after a
+dropped connection cannot overwrite the first reversal's reason, user and
+timestamp with the second one's. The action checks first as well, and when it
+finds the payment already reversed it answers *"That payment was already
+reversed"* as a **success**: from where the person is sitting the thing they
+asked for is true, and reporting a failure would invite them to try again.
+
+**Not yet verified on a device, and Phase 12 depends on this being right.** The
+figures the invoice PDF renders are the ones this phase writes. §19 item 20
+still stands — no build phase can sign in to the panel — so the §20.6 checks on
+the record panel, the warning round trip and the reversal history are the
+client's to run, against **AHR-2026-00001** (§19 item 22).
+
 ---
 
 ## 14. Public features
@@ -2151,7 +2220,7 @@ of that script once the translation lands.**
 
 **Phase 10 — Bookings.** Full schema. Stepped mobile-first creation form. Rooms and services repeaters. Server-side calculation. Server-side draft autosave on step change. Confirm with atomic numbering. List with search and filters, including the Drafts filter with 30-day stale marking for manual deletion (§9.10). Detail screen. Edit with the section 9.3 guards. Cancel. Audit logging with before/after values. **Built and deployed.** Migration `0005_phase10_bookings.sql` is applied local and remote and creates six tables — `bookings`, `booking_rooms`, `booking_services`, `payments`, `booking_counters`, `audit_log`. `payments` deliberately arrives a phase ahead of its UI so that the derivation has one implementation rather than two; the departures from §8, §13.4 and §20 are recorded as *Phase 10 rulings* in §13. **Device-tested on Android**, which found one defect and one addition: the Drafts filter was not discoverable enough to count as the work being findable (ruling 4), and autosave now runs on a typing debounce as well as on step change (ruling 7). The build itself still cannot sign in to check a screen — accounts are the client's to create (§19 item 20).
 
-**Phase 11 — Payments.** Unlimited instalments recorded against a booking. Derived `amountPaid` and `paymentStatus`, recalculated on payment *and* on booking edit. Reversal with reason. Payment history on the booking detail screen. The table and the derivation already exist (Phase 10 ruling 1); **this phase must call `recalculateBooking` rather than compute either figure itself** (ruling 2).
+**Phase 11 — Payments.** Unlimited instalments recorded against a booking. Derived `amountPaid` and `paymentStatus`, recalculated on payment *and* on booking edit. Reversal with reason. Payment history on the booking detail screen. The table and the derivation already exist (Phase 10 ruling 1); **this phase must call `recalculateBooking` rather than compute either figure itself** (ruling 2). **Built.** No migration — the table shipped a phase early, so there was nothing to add. Recording warns without blocking on an overpayment or a future date, reversal is admin-only and idempotent, and both are logged against the booking so they appear in the one timeline staff read. The departures from §9.4 and §13.4 are recorded as *Phase 11 rulings* in §13. **Device QA is outstanding** (§19 item 20) and runs against the test booking kept for it (§19 item 22).
 
 **Phase 12 — PDF.** Two type shapes, sanitiser, two separate document components, generation UI, amount-in-words, generation timestamp in the header. Web Share API delivery with download fallback (section 20.2). **Test on a real iPhone before moving on** — verify A4 dimensions, page breaks, and the share sheet. **Test the confidential style specifically for leaks** — inspect extracted PDF text, not just the visual render.
 

@@ -8,19 +8,29 @@ import {
   Card,
   EmptyState,
   PageHeading,
+  Pill,
 } from '@/components/admin/ui';
-import { listAuditForEntity, type AuditEntry } from '@/db/queries/audit';
+import {
+  AUDIT_DATE_FIELDS,
+  AUDIT_FIELD_LABELS,
+  AUDIT_MONEY_FIELDS,
+  listAuditForEntity,
+  type AuditEntry,
+} from '@/db/queries/audit';
 import { getBooking } from '@/db/queries/bookings';
+import { listSimpleLookups } from '@/db/queries/lookups';
+import { listPayments, type Payment } from '@/db/queries/payments';
 import { requirePageAccess } from '@/lib/auth-guard';
 import { formatDate, formatSAR } from '@/lib/format';
 import { roleCan } from '@/lib/permissions';
-import { fromSeconds } from '@/lib/time';
+import { fromSeconds, secondsToDateString, todayInRiyadh } from '@/lib/time';
 
 import {
   CancelBookingForm,
   DeleteDraftForm,
   MarkCompletedButton,
 } from './booking-actions';
+import { RecordPaymentPanel, ReversePaymentForm } from './payment-forms';
 
 export const metadata: Metadata = { title: 'Booking' };
 
@@ -35,14 +45,17 @@ export const metadata: Metadata = { title: 'Booking' };
  * booking and one derivation, and the PDF is a view of this state rather than a
  * stored document (§8, §10).
  *
+ * Recording a payment moves them, and so does editing the booking — both go
+ * through `recalculateBooking` and this page reads the result. Nothing here
+ * adds a payment to a total in the browser.
+ *
  * ## What is deliberately absent
  *
- * **Record payment** (Phase 11) and **Download PDF** (Phase 12) are not
- * rendered, rather than rendered disabled. Phase 9 set that precedent for the
- * agency profile's **+ New booking** button and the sidebar follows it too: a
- * dead control in front of staff is worse than one that appears when it works.
- * Each section says what is coming, so the screen reads as unfinished rather
- * than broken.
+ * **Download PDF** (Phase 12) is not rendered, rather than rendered disabled.
+ * Phase 9 set that precedent for the agency profile's **+ New booking** button
+ * and the sidebar follows it too: a dead control in front of staff is worse
+ * than one that appears when it works. The section says what is coming, so the
+ * screen reads as unfinished rather than broken.
  */
 export default async function BookingDetailPage({
   params,
@@ -55,7 +68,12 @@ export default async function BookingDetailPage({
   const booking = await getBooking(id);
   if (!booking) notFound();
 
-  const timeline = await listAuditForEntity('booking', id);
+  // Three independent reads on a screen that is often opened over hotel wifi.
+  const [timeline, payments, lookups] = await Promise.all([
+    listAuditForEntity('booking', id),
+    listPayments(id),
+    listSimpleLookups(),
+  ]);
 
   const canEdit =
     roleCan(user.role, 'editBookings') && booking.status !== 'cancelled';
@@ -70,6 +88,14 @@ export default async function BookingDetailPage({
     booking.status !== 'draft';
   const canDeleteDraft =
     roleCan(user.role, 'createBookings') && booking.status === 'draft';
+  // §9.4 — a draft has no agreed value to pay against, and a cancelled booking
+  // takes a reversal rather than a new instalment. The server action refuses
+  // both independently; this only decides what to offer.
+  const canRecordPayment =
+    roleCan(user.role, 'recordPayments') &&
+    booking.status !== 'draft' &&
+    booking.status !== 'cancelled';
+  const canReversePayment = roleCan(user.role, 'reversePayments');
 
   const balanceDue = booking.totalValue - booking.amountPaid;
 
@@ -222,18 +248,46 @@ export default async function BookingDetailPage({
           </dl>
         </Card>
 
-        {/* Payments land in Phase 11 and the two PDF styles in Phase 12. Named
-            rather than mocked up, so nobody waits for a button that is not
-            there yet. */}
+        {/* --- Payment history (§13.4, §9.4) ------------------------------ */}
         <Card
           title="Payments"
-          description="Recording instalments arrives with the payments phase."
+          description={
+            payments.length > 0
+              ? 'Instalments in the order the money arrived. Reversals stay in place.'
+              : undefined
+          }
         >
-          <EmptyState>
-            The booking already carries what has been paid — {formatSAR(booking.amountPaid)} —
-            and the status beside it recalculates whenever that changes or the
-            booking is edited.
-          </EmptyState>
+          {payments.length === 0 ? (
+            <EmptyState>
+              {canRecordPayment
+                ? 'Nothing received yet.'
+                : booking.status === 'draft'
+                  ? 'A draft takes no payments. Confirm it first.'
+                  : 'Nothing received yet.'}
+            </EmptyState>
+          ) : (
+            <ul className="divide-y divide-hairline">
+              {payments.map((payment) => (
+                <li key={payment.id} className="px-4 py-3.5 text-sm sm:px-5">
+                  <PaymentRow
+                    payment={payment}
+                    canReverse={canReversePayment && !payment.isReversed}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {canRecordPayment ? (
+            <RecordPaymentPanel
+              bookingId={id}
+              balanceDue={balanceDue}
+              methods={lookups.payment_methods
+                .filter((method) => method.isActive)
+                .map((method) => ({ id: method.id, name: method.name }))}
+              today={secondsToDateString(todayInRiyadh())}
+            />
+          ) : null}
         </Card>
 
         <Card title="History">
@@ -297,6 +351,76 @@ function Row({ label, value }: { label: string; value: string | null }) {
   );
 }
 
+/**
+ * One instalment (§13.4).
+ *
+ * A reversed payment is struck through and stays exactly where it was, in date
+ * order, with its reason underneath. It is not moved to the bottom, greyed into
+ * illegibility, or hidden behind a toggle: the history is what a refund looks
+ * like on paper, and both halves of it have to be readable side by side.
+ */
+function PaymentRow({
+  payment,
+  canReverse,
+}: {
+  payment: Payment;
+  canReverse: boolean;
+}) {
+  const detail = [
+    formatDate(fromSeconds(payment.paidAt), 'en'),
+    payment.methodName,
+    payment.reference,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5">
+        <span>
+          <span
+            className={
+              payment.isReversed
+                ? 'font-semibold text-muted line-through'
+                : 'font-semibold text-ink'
+            }
+          >
+            {formatSAR(payment.amount)}
+          </span>
+          {payment.isReversed ? (
+            <span className="ms-2 align-middle">
+              <Pill tone="neutral">Reversed</Pill>
+            </span>
+          ) : null}
+          <span className="block text-xs text-muted">{detail}</span>
+        </span>
+
+        {canReverse ? (
+          <ReversePaymentForm paymentId={payment.id} amount={payment.amount} />
+        ) : null}
+      </div>
+
+      {payment.notes ? (
+        <p className="mt-1.5 text-xs text-muted">{payment.notes}</p>
+      ) : null}
+
+      <p className="mt-1.5 text-xs text-muted">
+        Recorded by {payment.recordedByName ?? 'a removed account'}
+      </p>
+
+      {payment.isReversed ? (
+        <p className="mt-1.5 text-xs text-error">
+          Reversed{payment.reversedByName ? ` by ${payment.reversedByName}` : ''}
+          {payment.reversedAt
+            ? ` on ${formatDate(fromSeconds(payment.reversedAt), 'en')}`
+            : ''}
+          {payment.reverseReason ? ` — ${payment.reverseReason}` : ''}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 const ACTION_LABEL: Record<string, string> = {
   'booking.created': 'Created',
   'booking.updated': 'Edited',
@@ -304,6 +428,8 @@ const ACTION_LABEL: Record<string, string> = {
   'booking.completed': 'Completed',
   'booking.cancelled': 'Cancelled',
   'booking.draft_deleted': 'Draft deleted',
+  'payment.recorded': 'Payment recorded',
+  'payment.reversed': 'Payment reversed',
 };
 
 /**
@@ -334,8 +460,9 @@ function TimelineEntry({ entry }: { entry: AuditEntry }) {
         <ul className="mt-1.5 space-y-0.5 text-xs text-muted">
           {fields.map((field) => (
             <li key={field}>
-              {field}: <span className="line-through">{format(before[field])}</span> →{' '}
-              <span className="text-ink">{format(after[field])}</span>
+              {AUDIT_FIELD_LABELS[field] ?? field}:{' '}
+              <span className="line-through">{format(field, before[field])}</span> →{' '}
+              <span className="text-ink">{format(field, after[field])}</span>
             </li>
           ))}
         </ul>
@@ -350,7 +477,26 @@ function TimelineEntry({ entry }: { entry: AuditEntry }) {
   );
 }
 
-function format(value: unknown): string {
+/**
+ * A timeline value in the form the rest of the panel would show it.
+ *
+ * Money through `formatSAR` and dates through `formatDate`, never interpolated
+ * raw (§8) — `amountPaid: 0 → 5000` is the same information as
+ * `Paid: SAR 0 → SAR 5,000` only to someone who already knows the schema, and
+ * this line exists precisely for the person who does not.
+ */
+function format(field: string, value: unknown): string {
   if (value === null || value === undefined || value === '') return '—';
+
+  if (AUDIT_MONEY_FIELDS.has(field) && typeof value === 'number') {
+    return formatSAR(value);
+  }
+
+  if (AUDIT_DATE_FIELDS.has(field) && typeof value === 'number') {
+    return formatDate(fromSeconds(value), 'en');
+  }
+
+  if (typeof value === 'string') return value.replace(/_/g, ' ');
+
   return String(value);
 }

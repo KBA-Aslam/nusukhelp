@@ -265,6 +265,31 @@ export async function setLookupActive(
   }
 }
 
+/**
+ * One payment method by id — what a recorded payment snapshots its name from
+ * (§9.5, Phase 11).
+ *
+ * A targeted read rather than `listSimpleLookups`, which would run four queries
+ * to answer one. It deliberately does **not** filter on `isActive`: the select
+ * on the form offers only live methods, but a method retired between the page
+ * rendering and the payment being submitted must not turn a valid submission
+ * into "choose a payment method from the list". Deactivation stops something
+ * being offered; it does not invalidate what someone is in the middle of doing.
+ */
+export async function getPaymentMethod(
+  id: string,
+): Promise<{ id: string; name: string } | null> {
+  const db = getDb();
+
+  const [row] = await db
+    .select({ id: paymentMethods.id, name: paymentMethods.name })
+    .from(paymentMethods)
+    .where(eq(paymentMethods.id, id))
+    .limit(1);
+
+  return row ?? null;
+}
+
 /* --------------------------------------------------------------------------
    Hotels
    -------------------------------------------------------------------------- */

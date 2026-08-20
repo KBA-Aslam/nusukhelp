@@ -2,26 +2,16 @@ import { z } from 'zod';
 
 import { HOTEL_CATEGORIES, HOTEL_CITIES } from '@/db/schema';
 
+import { optionalText } from './fields';
+
 /**
  * The Phase 9 admin schemas — shared client and server, **server authoritative**
  * (Appendix B, §15).
  *
- * ## `optionalText`
- *
- * Almost every field on these forms is optional free text, and an HTML form
- * sends an untouched input as `''`, never as absent. Storing `''` where the
- * column means "unknown" gives two representations of nothing — and then
- * `contactPerson || '—'` renders correctly while `contactPerson === null`
- * quietly stops being true. So empty collapses to `null` at the boundary, once,
- * rather than at each call site.
+ * Almost every field on these forms is optional free text. `optionalText` and
+ * the rest of the field shapes live in `fields.ts`, shared with the booking and
+ * payment schemas — see the note there on why empty collapses to `null`.
  */
-const optionalText = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .transform((value) => (value.length === 0 ? null : value))
-    .nullable();
 
 /* --------------------------------------------------------------------------
    Lookup lists (§8)
